@@ -1,0 +1,17 @@
+[app]
+host = localhost
+port = 4242
+description =|
+A wonderful application!
+Enjoy!
+
+[type]
+earth = green
+water = blue
+fire = red
+dark_fire = dark [type.fire]
+
+[monsters]
+type = enemy
+[monsters.flying]
+fire_butterfly = [type.dark_fire] butterfly
