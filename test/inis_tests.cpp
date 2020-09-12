@@ -21,6 +21,8 @@ TEST(inis_tests, basic_test)
     ASSERT_EQ(settings.get<std::string>("app.description"), "A wonderful application!\nEnjoy!");
     std::string fire_butterfly = settings.get<std::string>("monsters.flying.fire_butterfly");
     ASSERT_EQ(fire_butterfly, "[type.dark_fire] butterfly");
+    settings.format(fire_butterfly);
+    ASSERT_EQ(fire_butterfly, "dark red butterfly");
 
     ASSERT_NE(settings.section_ptr("app"), nullptr);
     ASSERT_NE(settings.section_ptr("monsters"), nullptr);

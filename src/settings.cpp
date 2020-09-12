@@ -111,7 +111,6 @@ bool settings::set_setting_from_line_(const std::string_view& line, setting_valu
     if (extract_label_value_(line, label, value, value_is_multi_line))
     {
         settings_dict::value_type setting(label, value);
-        replace_vars_(setting.second);
         auto eres = settings_.emplace(std::move(setting));
         if (value_is_multi_line)
             current_value = &eres.first->second;
@@ -142,8 +141,6 @@ bool settings::extract_label_value_(std::string_view str, std::string_view& labe
 
 void settings::append_line_to_current_value_(setting_value*& current_value, std::string line)
 {
-    this->replace_vars_(line);
-
     if (!line.empty())
     {
         if (!current_value->empty())
@@ -231,7 +228,7 @@ void settings::load_from_stream_(std::istream& stream, std::string& buffer)
     }
 }
 
-void settings::replace_vars_(std::string& var)
+void settings::format(std::string& var)
 {
     const settings& root_settings = root();
 
@@ -260,7 +257,11 @@ void settings::replace_vars_(std::string& var)
         {
             const setting_value* setting = root_settings.get_setting_value_ptr_(name);
             if (setting)
-                new_var += *setting;
+            {
+                std::string value_str = *setting;
+                format(value_str);
+                new_var += value_str;
+            }
             else
                 new_var += mm.str();
         }
@@ -272,7 +273,7 @@ void settings::replace_vars_(std::string& var)
 settings* settings::create_sections(const std::string_view& section_path)
 {
     std::match_results<std::string_view::const_iterator> match;
-    if(std::regex_match(section_path.begin(), section_path.end(), match, std::regex("^\\[([\\._[:alnum:]]+)\\]$"s, std::regex_constants::ECMAScript)))
+    if(std::regex_match(section_path.begin(), section_path.end(), match, std::regex(R"(^\[([\._[:alnum:]]+)\]$)"s, std::regex_constants::ECMAScript)))
     {
         const auto& sm = match[1];
         std::string_view section_name = std::string_view(sm.first, sm.length());

@@ -95,6 +95,9 @@ public:
         return default_value;
     }
 
+    // format:
+    void format(std::string& var);
+
     // setting modifiers:
     bool set(const std::string& label, const std::string& value);
 
@@ -129,7 +132,6 @@ private:
     const setting_value* get_setting_value_ptr_(const std::string& label) const;
     bool set_setting_from_line_(const std::string_view& line, setting_value*& current_value);
     bool extract_label_value_(std::string_view str, std::string_view& label, std::string_view& value, bool& value_is_multi_line);
-    void replace_vars_(std::string& var);
     void append_line_to_current_value_(setting_value*& current_value, std::string line);
     void load_from_stream_(std::istream& stream, std::string& buffer);
 
