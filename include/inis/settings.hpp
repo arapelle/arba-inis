@@ -55,30 +55,30 @@ public:
     }
 };
 
-class settings
+class section
 {
     inline constexpr static std::string_view::value_type standard_label_mark_ = '$';
 
 public:
-    using settings_dict = std::unordered_map<std::string, setting_value>;
+    using settings_dictionnary = std::unordered_map<std::string, setting_value>;
 
     inline constexpr static std::string_view settings_dir = "$settings_dir";
     inline constexpr static std::string_view working_dir = "$working_dir";
     inline constexpr static std::string_view tmp_dir = "$tmp_dir";
 
     // parent/root:
-    inline settings* parent() { return parent_; }
-    inline const settings* parent() const { return parent_; }
-    settings& root();
-    const settings& root() const;
+    inline section* parent() { return parent_; }
+    inline const section* parent() const { return parent_; }
+    section& root();
+    const section& root() const;
     inline bool is_root() const { return parent_ == nullptr; }
 
     // settings accessors:
-    inline const settings_dict& all_settings() const { return settings_; }
+    inline const settings_dictionnary& settings() const { return settings_; }
 
     template <class value_type>
     requires (!(std::is_same_v<std::string, value_type> || std::is_same_v<std::string_view, value_type>))
-    value_type get(const std::string_view& label, const value_type& default_value = value_type()) const
+    value_type setting(const std::string_view& label, const value_type& default_value = value_type()) const
     {
         const setting_value* s_value = get_setting_value_ptr_(std::string(label));
         if (s_value)
@@ -88,7 +88,7 @@ public:
 
     template <class value_type>
     requires std::is_same_v<std::string, value_type>
-    const std::string& get(const std::string_view& label, const std::string& default_value = std::string()) const
+    const std::string& setting(const std::string_view& label, const std::string& default_value = std::string()) const
     {
         const setting_value* s_value = get_setting_value_ptr_(std::string(label));
         if (s_value)
@@ -98,7 +98,7 @@ public:
 
     template <class value_type>
     requires std::is_same_v<std::string_view, value_type>
-    std::string_view get(const std::string_view& label, const std::string_view& default_value = std::string_view()) const
+    std::string_view setting(const std::string_view& label, const std::string_view& default_value = std::string_view()) const
     {
         const setting_value* s_value = get_setting_value_ptr_(std::string(label));
         if (s_value)
@@ -106,17 +106,17 @@ public:
         return default_value;
     }
 
-    std::string get_formatted(const std::string_view& setting_path, const std::string& default_value = std::string()) const;
-
     template <class value_type>
     requires std::is_same_v<std::string_view, value_type>
-    std::string_view get(const std::string_view& label, const std::string& default_value = std::string()) const
+    std::string_view setting(const std::string_view& label, const std::string& default_value = std::string()) const
     {
-        return get<std::string>(label, default_value);
+        return setting<std::string>(label, default_value);
     }
 
     // format:
     inline void format(std::string& var) const { format_(var, this); }
+
+    std::string formatted_setting(const std::string_view& setting_path, const std::string& default_value = std::string()) const;
 
     // setting modifiers:
     bool set(const std::string& label, const std::string& value);
@@ -134,15 +134,15 @@ public:
     }
 
     // create subsections:
-    settings* create_sections(const std::string_view& section_path);
+    section* create_sections(const std::string_view& section_path);
 
     // read/write file:
     void load_from_file(const std::filesystem::path& path);
     void save_to_file(const std::filesystem::path& path);
 
     // settings accessors:
-    const settings* section_ptr(const std::string& section_path) const;
-    const settings& section(const std::string& section_name) const { return *section_ptr(section_name); }
+    const section* child_ptr(const std::string& section_path) const;
+    const section& child(const std::string& section_name) const { return *child_ptr(section_name); }
 
     // printing methods:
     void write_to_stream(std::ostream& stream, unsigned indent = 0) const;
@@ -151,8 +151,8 @@ public:
 private:
     const setting_value* local_get_setting_value_ptr_(const std::string& label) const;
     const setting_value* get_setting_value_ptr_(const std::string& label) const;
-    void format_(std::string& var, const settings *root) const;
-    bool get_setting_value_if_exists_(const std::string& setting_path, std::string& value, const settings *root) const;
+    void format_(std::string& var, const section *root) const;
+    bool get_setting_value_if_exists_(const std::string& setting_path, std::string& value, const section *root) const;
     bool set_setting_from_line_(const std::string_view& line, setting_value*& current_value);
     bool extract_label_value_(std::string_view str, std::string_view& label, std::string_view& value, bool& value_is_multi_line);
     void append_line_to_current_value_(setting_value*& current_value, std::string line);
@@ -165,9 +165,9 @@ private:
     static void remove_left_spaces(std::string_view& str);
     static void remove_right_spaces(std::string_view& str);
 
-    settings* parent_ = nullptr;
-    settings_dict settings_;
-    std::unordered_map<std::string, std::unique_ptr<settings>> sections_;
+    section* parent_ = nullptr;
+    settings_dictionnary settings_;
+    std::unordered_map<std::string, std::unique_ptr<section>> sections_;
 };
 
 }

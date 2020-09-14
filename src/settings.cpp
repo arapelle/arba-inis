@@ -51,29 +51,29 @@ using String_tokenizer = Basic_string_tokenizer<>;
 
 //------------------------------------------------------------------------------
 
-settings& settings::root()
+section& section::root()
 {
-    settings* root = this;
+    section* root = this;
     while (root->parent_)
         root = root->parent_;
     return *root;
 }
 
-const settings& settings::root() const
+const section& section::root() const
 {
-    const settings* root = this;
+    const section* root = this;
     while (root->parent_)
         root = root->parent_;
     return *root;
 }
 
-std::string settings::get_formatted(const std::string_view& setting_path, const std::string &default_value) const
+std::string section::formatted_setting(const std::string_view& setting_path, const std::string &default_value) const
 {
     std::string value;
     std::string_view section_path;
     std::string_view setting_label;
     split_setting_path_(setting_path, section_path, setting_label);
-    const settings* settings = section_ptr(std::string(section_path));
+    const section* settings = child_ptr(std::string(section_path));
     if (!settings) [[unlikely]]
         return default_value;
     const setting_value* s_value = settings->local_get_setting_value_ptr_(std::string(setting_label));
@@ -82,9 +82,9 @@ std::string settings::get_formatted(const std::string_view& setting_path, const 
     return value;
 }
 
-const settings* settings::section_ptr(const std::string& section_path) const
+const section* section::child_ptr(const std::string& section_path) const
 {
-    const settings* settings = this;
+    const section* settings = this;
     String_tokenizer tokenizer(section_path, '.');
     for (String_tokenizer::String_view token; tokenizer.has_token();)
     {
@@ -97,7 +97,7 @@ const settings* settings::section_ptr(const std::string& section_path) const
     return settings;
 }
 
-const setting_value* settings::local_get_setting_value_ptr_(const std::string& label) const
+const setting_value* section::local_get_setting_value_ptr_(const std::string& label) const
 {
     auto iter = settings_.find(label);
     if (iter != settings_.end())
@@ -107,16 +107,16 @@ const setting_value* settings::local_get_setting_value_ptr_(const std::string& l
     return nullptr;
 }
 
-const setting_value* settings::get_setting_value_ptr_(const std::string& label) const
+const setting_value* section::get_setting_value_ptr_(const std::string& label) const
 {
     std::size_t index = label.rfind('.');
     std::string section_name;
     if(index != std::string::npos && index > 0)
         section_name = label.substr(0, index);
 
-    const settings* settings = this;
+    const section* settings = this;
     if (!section_name.empty())
-        settings = section_ptr(section_name);
+        settings = child_ptr(section_name);
 
     if (settings)
     {
@@ -128,7 +128,7 @@ const setting_value* settings::get_setting_value_ptr_(const std::string& label) 
     return nullptr;
 }
 
-void settings::format_(std::string &var, const settings* root) const
+void section::format_(std::string &var, const section* root) const
 {
     std::string regex_str = R"((\[()";
     regex_str += R"(\$)";
@@ -165,9 +165,9 @@ void settings::format_(std::string &var, const settings* root) const
     var = std::move(formatted_var);
 }
 
-bool settings::get_setting_value_if_exists_(const std::string& setting_path, std::string& value, const settings* root) const
+bool section::get_setting_value_if_exists_(const std::string& setting_path, std::string& value, const section* root) const
 {
-    const settings* settings = this;
+    const section* settings = this;
 
     for (;;)
     {
@@ -191,14 +191,14 @@ bool settings::get_setting_value_if_exists_(const std::string& setting_path, std
     return true;
 }
 
-bool settings::set_setting_from_line_(const std::string_view& line, setting_value*& current_value)
+bool section::set_setting_from_line_(const std::string_view& line, setting_value*& current_value)
 {
     std::string_view label;
     std::string_view value;
     bool value_is_multi_line = false;
     if (extract_label_value_(line, label, value, value_is_multi_line))
     {
-        settings_dict::value_type setting(label, value);
+        settings_dictionnary::value_type setting(label, value);
         auto eres = settings_.emplace(std::move(setting));
         if (value_is_multi_line)
             current_value = &eres.first->second;
@@ -209,7 +209,7 @@ bool settings::set_setting_from_line_(const std::string_view& line, setting_valu
     return false;
 }
 
-bool settings::extract_label_value_(std::string_view str, std::string_view& label, std::string_view& value, bool& value_is_multi_line)
+bool section::extract_label_value_(std::string_view str, std::string_view& label, std::string_view& value, bool& value_is_multi_line)
 {
     std::size_t index = str.find('=');
     if(index != std::string::npos)
@@ -227,7 +227,7 @@ bool settings::extract_label_value_(std::string_view str, std::string_view& labe
     return false;
 }
 
-void settings::append_line_to_current_value_(setting_value*& current_value, std::string line)
+void section::append_line_to_current_value_(setting_value*& current_value, std::string line)
 {
     if (!line.empty())
     {
@@ -244,7 +244,7 @@ void settings::append_line_to_current_value_(setting_value*& current_value, std:
         current_value = nullptr;
 }
 
-bool settings::set(const std::string& label, const std::string& value)
+bool section::set(const std::string& label, const std::string& value)
 {
     std::regex label_regex("[_[:alnum:]]+"s);
     if (std::regex_match(label, label_regex))
@@ -255,7 +255,7 @@ bool settings::set(const std::string& label, const std::string& value)
     return false;
 }
 
-void settings::load_from_file(const std::filesystem::path& path)
+void section::load_from_file(const std::filesystem::path& path)
 {
     settings_.insert_or_assign(std::string(settings_dir),
                                std::filesystem::canonical(path).parent_path().generic_string());
@@ -277,15 +277,15 @@ void settings::load_from_file(const std::filesystem::path& path)
     load_from_stream_(stream, buffer);
 }
 
-void settings::save_to_file(const std::filesystem::path& path)
+void section::save_to_file(const std::filesystem::path& path)
 {
     std::ofstream stream(path.string());
     write_to_stream(stream);
 }
 
-void settings::load_from_stream_(std::istream& stream, std::string& buffer)
+void section::load_from_stream_(std::istream& stream, std::string& buffer)
 {
-    settings* settings_ptr = this;
+    section* settings_ptr = this;
     setting_value* current_value = nullptr;
 
     while (stream && !stream.eof())
@@ -298,7 +298,7 @@ void settings::load_from_stream_(std::istream& stream, std::string& buffer)
         if (settings_ptr->set_setting_from_line_(line, current_value))
             continue;
 
-        if (settings* leaf_settings = this->create_sections(line))
+        if (section* leaf_settings = this->create_sections(line))
         {
             settings_ptr = leaf_settings;
             current_value = nullptr;
@@ -316,7 +316,7 @@ void settings::load_from_stream_(std::istream& stream, std::string& buffer)
     }
 }
 
-std::string_view settings::parent_section_path_(const std::string_view& path)
+std::string_view section::parent_section_path_(const std::string_view& path)
 {
     std::size_t index = path.rfind('.');
     if (index != std::string::npos && index > 0)
@@ -324,7 +324,7 @@ std::string_view settings::parent_section_path_(const std::string_view& path)
     return std::string_view();
 }
 
-void settings::split_setting_path_(const std::string_view& setting_path, std::string_view& section_path, std::string_view& setting)
+void section::split_setting_path_(const std::string_view& setting_path, std::string_view& section_path, std::string_view& setting)
 {
     std::size_t index = setting_path.rfind('.');
     if (index != std::string::npos && index > 0)
@@ -341,7 +341,7 @@ void settings::split_setting_path_(const std::string_view& setting_path, std::st
 
 
 
-settings* settings::create_sections(const std::string_view& section_path)
+section* section::create_sections(const std::string_view& section_path)
 {
     std::match_results<std::string_view::const_iterator> match;
     if(std::regex_match(section_path.begin(), section_path.end(), match, std::regex(R"(^\[([\._[:alnum:]]+)\]$)"s, std::regex_constants::ECMAScript)))
@@ -349,7 +349,7 @@ settings* settings::create_sections(const std::string_view& section_path)
         const auto& sm = match[1];
         std::string_view section_name = std::string_view(sm.first, sm.length());
 
-        settings* settings_ptr = this;
+        section* settings_ptr = this;
         String_tokenizer tokenizer(section_name, '.');
         for (String_tokenizer::String_view token; tokenizer.has_token();)
         {
@@ -357,7 +357,7 @@ settings* settings::create_sections(const std::string_view& section_path)
             auto& settings_uptr = settings_ptr->sections_[std::string(token)];
             if (!settings_uptr)
             {
-                settings_uptr = std::make_unique<settings>();
+                settings_uptr = std::make_unique<section>();
                 settings_uptr->parent_ = settings_ptr;
             }
             settings_ptr = settings_uptr.get();
@@ -368,34 +368,34 @@ settings* settings::create_sections(const std::string_view& section_path)
     return nullptr;
 }
 
-void settings::remove_comment(std::string_view& str)
+void section::remove_comment(std::string_view& str)
 {
     std::size_t index = str.find('#');
     if(index != std::string::npos)
         str.remove_suffix(str.length() - index);
 }
 
-void settings::remove_spaces(std::string_view& str)
+void section::remove_spaces(std::string_view& str)
 {
     remove_right_spaces(str);
     remove_left_spaces(str);
 }
 
-void settings::remove_left_spaces(std::string_view& str)
+void section::remove_left_spaces(std::string_view& str)
 {
     auto iter = std::find_if(str.begin(), str.end(), std::not_fn(isspace));
     if(iter != str.end())
         str.remove_prefix(iter - str.begin());
 }
 
-void settings::remove_right_spaces(std::string_view& str)
+void section::remove_right_spaces(std::string_view& str)
 {
     auto riter = std::find_if(str.rbegin(), str.rend(), std::not_fn(isspace));
     if(riter != str.rend())
         str.remove_suffix(str.end() - riter.base());
 }
 
-void settings::write_to_stream(std::ostream& stream, unsigned indent) const
+void section::write_to_stream(std::ostream& stream, unsigned indent) const
 {
     for (const auto& entry : settings_)
     {
@@ -414,7 +414,7 @@ void settings::write_to_stream(std::ostream& stream, unsigned indent) const
     }
 }
 
-void settings::print(unsigned indent) const
+void section::print(unsigned indent) const
 {
     write_to_stream(std::cout, indent);
 }
