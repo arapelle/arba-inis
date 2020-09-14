@@ -1,5 +1,5 @@
 #include <inis/settings.hpp>
-#include <string_view>
+#include <fstream>
 #include <iostream>
 
 namespace inis
@@ -67,10 +67,25 @@ const settings& settings::root() const
     return *root;
 }
 
-const settings* settings::section_ptr(const std::string& section_name) const
+std::string settings::get_formatted(const std::string_view& setting_path, const std::string &default_value) const
+{
+    std::string value;
+    std::string_view section_path;
+    std::string_view setting_label;
+    split_setting_path_(setting_path, section_path, setting_label);
+    const settings* settings = section_ptr(std::string(section_path));
+    if (!settings) [[unlikely]]
+        return default_value;
+    const setting_value* s_value = settings->local_get_setting_value_ptr_(std::string(setting_label));
+    value = s_value ? *s_value : default_value;
+    /*settings->*/format_(value, this);
+    return value;
+}
+
+const settings* settings::section_ptr(const std::string& section_path) const
 {
     const settings* settings = this;
-    String_tokenizer tokenizer(section_name, '.');
+    String_tokenizer tokenizer(section_path, '.');
     for (String_tokenizer::String_view token; tokenizer.has_token();)
     {
         token = tokenizer.next_token();
@@ -80,6 +95,16 @@ const settings* settings::section_ptr(const std::string& section_name) const
         settings = iter->second.get();
     }
     return settings;
+}
+
+const setting_value* settings::local_get_setting_value_ptr_(const std::string& label) const
+{
+    auto iter = settings_.find(label);
+    if (iter != settings_.end())
+    {
+        return &iter->second;
+    }
+    return nullptr;
 }
 
 const setting_value* settings::get_setting_value_ptr_(const std::string& label) const
@@ -101,6 +126,69 @@ const setting_value* settings::get_setting_value_ptr_(const std::string& label) 
     }
 
     return nullptr;
+}
+
+void settings::format_(std::string &var, const settings* root) const
+{
+    std::string regex_str = R"((\[()";
+    regex_str += R"(\$)";
+    regex_str += R"(?[\._[:alnum:]]+)\]))";
+    std::regex var_regex(regex_str);
+
+    auto reg_iter = std::sregex_iterator(var.begin(), var.end(), var_regex);
+    auto reg_end_iter = std::sregex_iterator();
+
+    std::smatch rmatch;
+    std::string formatted_var;
+    std::string::const_iterator bt_begin = var.begin();
+    for (; reg_iter != reg_end_iter; ++reg_iter)
+    {
+        rmatch = *reg_iter;
+        // get the matching token string
+        auto matching_token = rmatch[1];
+        // append the string token before the matching token to formatted_var
+        formatted_var += std::string(bt_begin, matching_token.first);
+        // set the begin before-token iterator to the end of the matching token
+        bt_begin = matching_token.second;
+
+        // get the setting path from the matching token string
+        std::string setting_path = rmatch[2].str();
+        // get the setting value if it exists among settings
+        std::string new_str_token;
+        if (!(get_setting_value_if_exists_(std::string(setting_path), new_str_token, root)))
+            // if not, the string token to append to formatted_var is the entire matching token string
+            new_str_token = matching_token.str();
+        formatted_var += new_str_token;
+    }
+    // append the remaining string to formatted_var
+    formatted_var += std::string(bt_begin, var.cend());
+    var = std::move(formatted_var);
+}
+
+bool settings::get_setting_value_if_exists_(const std::string& setting_path, std::string& value, const settings* root) const
+{
+    const settings* settings = this;
+
+    for (;;)
+    {
+        const setting_value* ptr = settings->get_setting_value_ptr_(setting_path);
+        if (ptr)
+        {
+            value = *ptr;
+            break;
+        }
+        else if (settings != root)
+        {
+            settings = settings->parent_;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    settings->format(value);
+    return true;
 }
 
 bool settings::set_setting_from_line_(const std::string_view& line, setting_value*& current_value)
@@ -228,47 +316,30 @@ void settings::load_from_stream_(std::istream& stream, std::string& buffer)
     }
 }
 
-void settings::format(std::string& var)
+std::string_view settings::parent_section_path_(const std::string_view& path)
 {
-    const settings& root_settings = root();
-
-    std::smatch rmatch;
-    std::string regex_str = R"((\[()";
-    regex_str += R"(\$)";
-    regex_str += R"(?[\._[:alnum:]]+)\]))";
-    std::regex var_regex(regex_str);
-
-    auto r_iter = std::sregex_iterator(var.begin(), var.end(), var_regex);
-    auto r_end_iter = std::sregex_iterator();
-
-    std::string new_var;
-    std::string::const_iterator bbegin = var.begin();
-    for (; r_iter != r_end_iter; ++r_iter)
-    {
-        rmatch = *r_iter;
-        auto mm = rmatch[1];
-        new_var += std::string(bbegin, mm.first);
-        bbegin = mm.second;
-        std::string name = rmatch[2].str();
-        auto iter = settings_.find(name);
-        if (iter != settings_.end())
-            new_var += iter->second;
-        else
-        {
-            const setting_value* setting = root_settings.get_setting_value_ptr_(name);
-            if (setting)
-            {
-                std::string value_str = *setting;
-                format(value_str);
-                new_var += value_str;
-            }
-            else
-                new_var += mm.str();
-        }
-    }
-    new_var += std::string(bbegin, var.cend());
-    var = new_var;
+    std::size_t index = path.rfind('.');
+    if (index != std::string::npos && index > 0)
+        return path.substr(0, index);
+    return std::string_view();
 }
+
+void settings::split_setting_path_(const std::string_view& setting_path, std::string_view& section_path, std::string_view& setting)
+{
+    std::size_t index = setting_path.rfind('.');
+    if (index != std::string::npos && index > 0)
+    {
+        section_path = setting_path.substr(0, index);
+        setting = setting_path.substr(index + 1);
+    }
+    else
+    {
+        section_path = std::string_view();
+        setting = setting_path;
+    }
+}
+
+
 
 settings* settings::create_sections(const std::string_view& section_path)
 {
