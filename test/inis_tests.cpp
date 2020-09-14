@@ -10,7 +10,7 @@ TEST(inis_tests, basic_settings_test)
     std::filesystem::path inis_filepath("inis/basic_settings.inis");
     ASSERT_TRUE(std::filesystem::exists(inis_filepath));
     inis::section settings;
-    settings.load_from_file(inis_filepath);
+    settings.read_from_file(inis_filepath);
 
     // standard settings:
     ASSERT_EQ(inis::section::settings_dir, "$settings_dir");
@@ -26,6 +26,10 @@ TEST(inis_tests, basic_settings_test)
     ASSERT_NE(settings.child_ptr("section.subsection"), nullptr);
     ASSERT_NE(settings.child_ptr("section.subsection2"), nullptr);
     ASSERT_EQ(settings.child_ptr("section.subsection.arg"), nullptr);
+    ASSERT_EQ(settings.child_ptr("")->name(), "");
+    ASSERT_EQ(settings.child_ptr("section")->name(), "section");
+    ASSERT_EQ(settings.child_ptr("section.subsection")->name(), "subsection");
+    ASSERT_EQ(settings.child_ptr("section.subsection2")->name(), "subsection2");
 
     // user settings:
     ASSERT_EQ(settings.setting<std::string>("global_label"), "value");
@@ -47,7 +51,7 @@ TEST(inis_tests, format_test)
     std::filesystem::path inis_filepath("inis/settings.inis");
     ASSERT_TRUE(std::filesystem::exists(inis_filepath));
     inis::section settings;
-    settings.load_from_file(inis_filepath);
+    settings.read_from_file(inis_filepath);
 
     // comment:
     std::string value = settings.setting<std::string>("comment");

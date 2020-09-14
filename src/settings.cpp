@@ -1,4 +1,5 @@
 #include <inis/settings.hpp>
+#include <regex>
 #include <fstream>
 #include <iostream>
 
@@ -51,6 +52,13 @@ using String_tokenizer = Basic_string_tokenizer<>;
 
 //------------------------------------------------------------------------------
 
+section::section()
+{}
+
+section::section(std::string name)
+    : name_(std::move(name))
+{}
+
 section& section::root()
 {
     section* root = this;
@@ -97,9 +105,24 @@ const section* section::child_ptr(const std::string& section_path) const
     return settings;
 }
 
-const setting_value* section::local_get_setting_value_ptr_(const std::string& label) const
+section* section::child_ptr(const std::string& section_path)
 {
-    auto iter = settings_.find(label);
+    section* settings = this;
+    String_tokenizer tokenizer(section_path, '.');
+    for (String_tokenizer::String_view token; tokenizer.has_token();)
+    {
+        token = tokenizer.next_token();
+        auto iter = settings->sections_.find(std::string(token));
+        if (iter == sections_.end())
+            return nullptr;
+        settings = iter->second.get();
+    }
+    return settings;
+}
+
+const setting_value* section::local_get_setting_value_ptr_(const std::string& setting_name) const
+{
+    auto iter = settings_.find(setting_name);
     if (iter != settings_.end())
     {
         return &iter->second;
@@ -107,12 +130,12 @@ const setting_value* section::local_get_setting_value_ptr_(const std::string& la
     return nullptr;
 }
 
-const setting_value* section::get_setting_value_ptr_(const std::string& label) const
+const setting_value* section::get_setting_value_ptr_(const std::string& setting_path) const
 {
-    std::size_t index = label.rfind('.');
+    std::size_t index = setting_path.rfind('.');
     std::string section_name;
     if(index != std::string::npos && index > 0)
-        section_name = label.substr(0, index);
+        section_name = setting_path.substr(0, index);
 
     const section* settings = this;
     if (!section_name.empty())
@@ -120,7 +143,28 @@ const setting_value* section::get_setting_value_ptr_(const std::string& label) c
 
     if (settings)
     {
-        auto iter = settings->settings_.find(label.substr(index+1));
+        auto iter = settings->settings_.find(setting_path.substr(index+1));
+        if (iter != settings->settings_.end())
+            return &iter->second;
+    }
+
+    return nullptr;
+}
+
+setting_value* section::get_setting_value_ptr_(const std::string& setting_path)
+{
+    std::size_t index = setting_path.rfind('.');
+    std::string section_name;
+    if(index != std::string::npos && index > 0)
+        section_name = setting_path.substr(0, index);
+
+    section* settings = this;
+    if (!section_name.empty())
+        settings = child_ptr(section_name);
+
+    if (settings)
+    {
+        auto iter = settings->settings_.find(setting_path.substr(index+1));
         if (iter != settings->settings_.end())
             return &iter->second;
     }
@@ -244,18 +288,18 @@ void section::append_line_to_current_value_(setting_value*& current_value, std::
         current_value = nullptr;
 }
 
-bool section::set(const std::string& label, const std::string& value)
+bool section::set(const std::string& setting_path, const std::string& value)
 {
     std::regex label_regex("[_[:alnum:]]+"s);
-    if (std::regex_match(label, label_regex))
+    if (std::regex_match(setting_path, label_regex))
     {
-        settings_[label] = value;
+        settings_[setting_path] = value;
         return true;
     }
     return false;
 }
 
-void section::load_from_file(const std::filesystem::path& path)
+void section::read_from_file(const std::filesystem::path& path)
 {
     settings_.insert_or_assign(std::string(settings_dir),
                                std::filesystem::canonical(path).parent_path().generic_string());
@@ -274,16 +318,16 @@ void section::load_from_file(const std::filesystem::path& path)
 
     std::ifstream stream(path.string());
     std::string buffer;
-    load_from_stream_(stream, buffer);
+    read_from_stream_(stream, buffer);
 }
 
-void section::save_to_file(const std::filesystem::path& path)
+void section::write_to_file(const std::filesystem::path& path)
 {
     std::ofstream stream(path.string());
-    write_to_stream(stream);
+    print_to_stream(stream);
 }
 
-void section::load_from_stream_(std::istream& stream, std::string& buffer)
+void section::read_from_stream_(std::istream& stream, std::string& buffer)
 {
     section* settings_ptr = this;
     setting_value* current_value = nullptr;
@@ -349,21 +393,21 @@ section* section::create_sections(const std::string_view& section_path)
         const auto& sm = match[1];
         std::string_view section_name = std::string_view(sm.first, sm.length());
 
-        section* settings_ptr = this;
+        section* section_ptr = this;
         String_tokenizer tokenizer(section_name, '.');
         for (String_tokenizer::String_view token; tokenizer.has_token();)
         {
             token = tokenizer.next_token();
-            auto& settings_uptr = settings_ptr->sections_[std::string(token)];
+            auto& settings_uptr = section_ptr->sections_[std::string(token)];
             if (!settings_uptr)
             {
-                settings_uptr = std::make_unique<section>();
-                settings_uptr->parent_ = settings_ptr;
+                settings_uptr = std::make_unique<section>(std::string(token));
+                settings_uptr->parent_ = section_ptr;
             }
-            settings_ptr = settings_uptr.get();
+            section_ptr = settings_uptr.get();
         }
 
-        return settings_ptr;
+        return section_ptr;
     }
     return nullptr;
 }
@@ -395,7 +439,7 @@ void section::remove_right_spaces(std::string_view& str)
         str.remove_suffix(str.end() - riter.base());
 }
 
-void section::write_to_stream(std::ostream& stream, unsigned indent) const
+void section::print_to_stream(std::ostream& stream, unsigned indent) const
 {
     for (const auto& entry : settings_)
     {
@@ -410,12 +454,12 @@ void section::write_to_stream(std::ostream& stream, unsigned indent) const
         for (unsigned i = indent; i > 0; --i)
             stream << "  ";
         stream << "[" << entry.first << "]" << std::endl;
-        entry.second->write_to_stream(stream, indent + 1);
+        entry.second->print_to_stream(stream, indent + 1);
     }
 }
 
 void section::print(unsigned indent) const
 {
-    write_to_stream(std::cout, indent);
+    print_to_stream(std::cout, indent);
 }
 }
