@@ -21,7 +21,7 @@ bool setting_string_to_value(const std::string& setting_value, value_type& value
 {
     std::istringstream stream(setting_value);
     if (stream >> value)
-        return true;
+        return stream.eof();
     return false;
 }
 
