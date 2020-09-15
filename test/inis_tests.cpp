@@ -55,16 +55,16 @@ TEST(inis_tests, format_test)
 
     // comment:
     std::string value = settings.setting<std::string>("comment");
-    ASSERT_EQ(value, "[Version: '[version]']");
+    ASSERT_EQ(value, "{Version: '{version}'}");
     settings.format(value);
-    ASSERT_EQ(value, "[Version: '0.1.0']");
+    ASSERT_EQ(value, "{Version: '0.1.0'}");
 
     // get_formatted("vfs.img"):
     ASSERT_EQ(settings.formatted_setting("vfs.img"), "resource/image");
 
     // get<std::string>("vfs.img"), format(vfs_img):
     std::string vfs_img = settings.setting<std::string>("vfs.img");
-    ASSERT_EQ(vfs_img, "[vfs.rsc]/[dirname.img]");
+    ASSERT_EQ(vfs_img, "{vfs.rsc}/{dirname.img}");
     settings.format(vfs_img);
     ASSERT_EQ(vfs_img, "resource/image");
 

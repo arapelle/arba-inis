@@ -170,9 +170,9 @@ setting_value* section::get_setting_value_ptr_(const std::string& setting_path)
 
 void section::format_(std::string &var, const section* root) const
 {
-    std::string regex_str = R"((\[()";
+    std::string regex_str = R"((\{()";
     regex_str += R"(\$)";
-    regex_str += R"(?[\._[:alnum:]]+)\]))";
+    regex_str += R"(?[\._[:alnum:]]+)\}))";
     std::regex var_regex(regex_str);
 
     auto reg_iter = std::sregex_iterator(var.begin(), var.end(), var_regex);
