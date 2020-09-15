@@ -58,6 +58,43 @@ class section
 {
     inline constexpr static std::string_view::value_type standard_label_mark_ = '$';
 
+    friend class parser;
+    class parser
+    {
+        parser(section* section, std::istream& stream, std::string_view comment_marker);
+
+    public:
+        parser(section* section, std::istream& stream, const std::filesystem::path& setting_filepath);
+        inline const section* sec() const { return this_section_; }
+        inline section* sec() { return this_section_; }
+        inline const std::istream& stream() const { return stream_; }
+        inline std::istream& stream() { return stream_; }
+        inline const std::string_view& comment_marker() const { return comment_marker_; }
+        void parse();
+
+    private:
+        void read_from_stream_(std::string& buffer);
+        bool create_setting_(const std::string_view& line);
+        section* create_sections_(const std::string_view& section_path);
+        void append_line_to_current_value_(const std::string_view &line);
+
+        static std::string_view deduce_comment_marker_from_(const std::filesystem::path& setting_filepath);
+        static bool extract_name_and_value_(std::string_view str, std::string_view& label,
+                                         std::string_view& value, bool& value_is_multi_line);
+        void remove_comment_(std::string_view& str);
+        static void remove_spaces_(std::string_view& str);
+        static void remove_left_spaces_(std::string_view& str);
+        static void remove_right_spaces_(std::string_view& str);
+
+    private:
+        section* this_section_;
+        std::istream& stream_;
+        std::string_view comment_marker_;
+        // current status:
+        section* current_section_;
+        setting_value* current_value_;
+    };
+
 public:
     using settings_dictionnary = std::unordered_map<std::string, setting_value>;
 
@@ -164,17 +201,9 @@ private:
     void format_(std::string& var, const section *root) const;
     bool get_setting_value_if_exists_(const std::string& setting_path, std::string& value, const section *root) const;
     std::size_t find_explicit_path_start_(const std::string_view& setting_path, const section*& section, const class section* root) const;
-    bool set_setting_from_line_(const std::string_view& line, setting_value*& current_value);
-    bool extract_label_value_(std::string_view str, std::string_view& label, std::string_view& value, bool& value_is_multi_line);
-    void append_line_to_current_value_(setting_value*& current_value, std::string line);
-    void read_from_stream_(std::istream& stream, std::string& buffer);
 
     static std::string_view parent_section_path_(const std::string_view& path);
     static void split_setting_path_(const std::string_view& setting_path, std::string_view& section_path, std::string_view& setting);
-    static void remove_comment(std::string_view& str);
-    static void remove_spaces(std::string_view& str);
-    static void remove_left_spaces(std::string_view& str);
-    static void remove_right_spaces(std::string_view& str);
 
     section* parent_ = nullptr;
     std::string name_;

@@ -1,7 +1,7 @@
 global_label = value
 bad_int = 45a
 
-# comment
+// comment
 
 [section]
 level = 0

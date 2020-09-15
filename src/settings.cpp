@@ -243,59 +243,6 @@ std::size_t section::find_explicit_path_start_(const std::string_view& setting_p
     return offset;
 }
 
-bool section::set_setting_from_line_(const std::string_view& line, setting_value*& current_value)
-{
-    std::string_view label;
-    std::string_view value;
-    bool value_is_multi_line = false;
-    if (extract_label_value_(line, label, value, value_is_multi_line))
-    {
-        settings_dictionnary::value_type setting(label, value);
-        auto eres = settings_.emplace(std::move(setting));
-        if (value_is_multi_line)
-            current_value = &eres.first->second;
-        else
-            current_value = nullptr;
-        return true;
-    }
-    return false;
-}
-
-bool section::extract_label_value_(std::string_view str, std::string_view& label, std::string_view& value, bool& value_is_multi_line)
-{
-    std::size_t index = str.find('=');
-    if(index != std::string::npos)
-    {
-        label = str.substr(0, index);
-        remove_spaces(label);
-        value = str.substr(index + 1);
-        value_is_multi_line = !value.empty() && value.front() == '|';
-        if (value_is_multi_line)
-            value = std::string_view();
-        else
-            remove_spaces(value);
-        return true;
-    }
-    return false;
-}
-
-void section::append_line_to_current_value_(setting_value*& current_value, std::string line)
-{
-    if (!line.empty())
-    {
-        if (!current_value->empty())
-        {
-            current_value->reserve(current_value->length() + line.length() + 1);
-            current_value->append(1, '\n');
-            current_value->append(std::move(line));
-        }
-        else
-            *current_value = std::move(line);
-    }
-    else
-        current_value = nullptr;
-}
-
 bool section::set(const std::string& setting_path, const std::string& value)
 {
     std::regex label_regex("[_[:alnum:]]+"s);
@@ -311,61 +258,15 @@ void section::read_from_file(const std::filesystem::path& path)
 {
     settings_.insert_or_assign(std::string(settings_dir),
                                std::filesystem::canonical(path).parent_path().generic_string());
-    if (is_root())
-    {
-        settings_.insert_or_assign(std::string(working_dir),
-                                   std::filesystem::canonical(std::filesystem::current_path()).generic_string());
-        settings_.insert_or_assign(std::string(tmp_dir),
-                                   std::filesystem::temp_directory_path().generic_string());
-//        settings_.insert_or_assign("<program_dir>"s, "???");
-    }
-    else
-    {
-        std::cout << "WARNING: load from a settings node which is not root." << std::endl;
-    }
-
     std::ifstream stream(path.string());
-    std::string buffer;
-    read_from_stream_(stream, buffer);
+    parser inis_parser(this, stream, path);
+    inis_parser.parse();
 }
 
 void section::write_to_file(const std::filesystem::path& path)
 {
     std::ofstream stream(path.string());
     print_to_stream(stream);
-}
-
-void section::read_from_stream_(std::istream& stream, std::string& buffer)
-{
-    section* settings_ptr = this;
-    setting_value* current_value = nullptr;
-
-    while (stream && !stream.eof())
-    {
-        std::getline(stream, buffer);
-        std::string_view line(buffer);
-        remove_comment(line);
-        remove_right_spaces(line);
-
-        if (settings_ptr->set_setting_from_line_(line, current_value))
-            continue;
-
-        if (section* leaf_settings = this->create_sections(line))
-        {
-            settings_ptr = leaf_settings;
-            current_value = nullptr;
-            continue;
-        }
-
-        if (current_value)
-        {
-            append_line_to_current_value_(current_value, std::string(line));
-            continue;
-        }
-
-        if (!line.empty())
-            std::cerr << "BAD LINE : '" << line << "'" << std::endl;
-    }
 }
 
 std::string_view section::parent_section_path_(const std::string_view& path)
@@ -420,33 +321,6 @@ section* section::create_sections(const std::string_view& section_path)
     return nullptr;
 }
 
-void section::remove_comment(std::string_view& str)
-{
-    std::size_t index = str.find('#');
-    if(index != std::string::npos)
-        str.remove_suffix(str.length() - index);
-}
-
-void section::remove_spaces(std::string_view& str)
-{
-    remove_right_spaces(str);
-    remove_left_spaces(str);
-}
-
-void section::remove_left_spaces(std::string_view& str)
-{
-    auto iter = std::find_if(str.begin(), str.end(), std::not_fn(isspace));
-    if(iter != str.end())
-        str.remove_prefix(iter - str.begin());
-}
-
-void section::remove_right_spaces(std::string_view& str)
-{
-    auto riter = std::find_if(str.rbegin(), str.rend(), std::not_fn(isspace));
-    if(riter != str.rend())
-        str.remove_suffix(str.end() - riter.base());
-}
-
 void section::print_to_stream(std::ostream& stream, unsigned indent) const
 {
     for (const auto& entry : settings_)
@@ -470,4 +344,163 @@ void section::print(unsigned indent) const
 {
     print_to_stream(std::cout, indent);
 }
+
+//----------------------------------------------------------------
+
+
+section::parser::parser(section* section, std::istream& stream, std::string_view comment_marker)
+    : this_section_(section), stream_(stream), comment_marker_(comment_marker), current_section_(nullptr), current_value_(nullptr)
+{}
+
+section::parser::parser(section *section, std::istream& stream, const std::filesystem::path& setting_filepath)
+    : parser(section, stream, deduce_comment_marker_from_(setting_filepath))
+{}
+
+void section::parser::parse()
+{
+    std::string buffer;
+    buffer.reserve(120);
+    read_from_stream_(buffer);
+}
+
+void section::parser::read_from_stream_(std::string& buffer)
+{
+    if (this_section_->is_root())
+    {
+        this_section_->settings_.insert_or_assign(std::string(working_dir),
+                                   std::filesystem::canonical(std::filesystem::current_path()).generic_string());
+        this_section_->settings_.insert_or_assign(std::string(tmp_dir),
+                                   std::filesystem::temp_directory_path().generic_string());
+//        section_->settings_.insert_or_assign("$program_dir"s, "???");
+    }
+    else
+    {
+        std::cerr << "WARNING: Load from a section node which is not root." << std::endl;
+    }
+
+    current_section_ = this_section_;
+    current_value_ = nullptr;
+
+    while (stream_ && !stream_.eof())
+    {
+        std::getline(stream_, buffer);
+        std::string_view line(buffer);
+        remove_comment_(line);
+        remove_right_spaces_(line);
+
+        if (create_setting_(line))
+            continue;
+
+        if (section* leaf_section = create_sections_(line))
+        {
+            current_section_ = leaf_section;
+            current_value_ = nullptr;
+            continue;
+        }
+
+        if (current_value_)
+        {
+            append_line_to_current_value_(line);
+            continue;
+        }
+
+        if (!line.empty())
+            std::cerr << "WARNING: Bad line : '" << line << "'" << std::endl;
+    }
+}
+
+bool section::parser::create_setting_(const std::string_view &line)
+{
+    std::string_view label;
+    std::string_view value;
+    bool value_is_multi_line = false;
+    if (extract_name_and_value_(line, label, value, value_is_multi_line))
+    {
+        settings_dictionnary::value_type setting(label, value);
+        auto insert_res = current_section_->settings_.emplace(std::move(setting));
+        if (value_is_multi_line)
+            current_value_ = &insert_res.first->second;
+        else
+            current_value_ = nullptr;
+        return true;
+    }
+    return false;
+}
+
+section *section::parser::create_sections_(const std::string_view &section_path) // ok
+{
+    return this_section_->create_sections(section_path);
+}
+
+void section::parser::append_line_to_current_value_(const std::string_view& line) // ok
+{
+    if (!line.empty())
+    {
+        if (!current_value_->empty())
+        {
+            current_value_->reserve(current_value_->length() + line.length() + 1);
+            current_value_->append(1, '\n');
+            current_value_->append(std::move(line));
+        }
+        else
+            *current_value_ = std::string(line);
+    }
+    else
+        current_value_ = nullptr;
+}
+
+std::string_view section::parser::deduce_comment_marker_from_(const std::filesystem::path& setting_filepath)
+{
+    std::string ext = setting_filepath.extension().generic_string();
+    if (ext == ".inis")
+        return "//";
+    return ";";
+}
+
+bool section::parser::extract_name_and_value_(std::string_view str, std::string_view &label,
+                                           std::string_view &value, bool &value_is_multi_line)
+{
+    std::size_t index = str.find('=');
+    if (index != std::string::npos)
+    {
+        label = str.substr(0, index);
+        remove_spaces_(label);
+        value = str.substr(index + 1);
+        value_is_multi_line = !value.empty() && value.front() == '|';
+        if (value_is_multi_line)
+            value = std::string_view();
+        else
+            remove_spaces_(value);
+        return true;
+    }
+    return false;
+}
+
+void section::parser::remove_comment_(std::string_view& str)
+{
+    std::size_t index = str.find(comment_marker_);
+    if(index != std::string::npos)
+        str.remove_suffix(str.length() - index);
+}
+
+void section::parser::remove_spaces_(std::string_view& str)
+{
+    remove_right_spaces_(str);
+    remove_left_spaces_(str);
+}
+
+void section::parser::remove_left_spaces_(std::string_view& str)
+{
+    auto iter = std::find_if(str.begin(), str.end(), std::not_fn(isspace));
+    if(iter != str.end())
+        str.remove_prefix(iter - str.begin());
+}
+
+void section::parser::remove_right_spaces_(std::string_view& str)
+{
+    auto riter = std::find_if(str.rbegin(), str.rend(), std::not_fn(isspace));
+    if(riter != str.rend())
+        str.remove_suffix(str.end() - riter.base());
+}
+
 }
