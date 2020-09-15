@@ -61,6 +61,13 @@ class section
     friend class parser;
     class parser
     {
+        enum value_category : uint8_t
+        {
+            Single_line = 0,
+            Multi_line = 1,
+            Split_line = 2,
+        };
+
         parser(section* section, std::istream& stream, std::string_view comment_marker);
 
     public:
@@ -73,14 +80,14 @@ class section
         void parse();
 
     private:
-        void read_from_stream_(std::string& buffer);
+        void read_from_stream_();
         bool create_setting_(const std::string_view& line);
         section* create_sections_(const std::string_view& section_path);
         void append_line_to_current_value_(const std::string_view &line);
 
         static std::string_view deduce_comment_marker_from_(const std::filesystem::path& setting_filepath);
         static bool extract_name_and_value_(std::string_view str, std::string_view& label,
-                                         std::string_view& value, bool& value_is_multi_line);
+                                            std::string_view& value, value_category &value_cat);
         void remove_comment_(std::string_view& str);
         static void remove_spaces_(std::string_view& str);
         static void remove_left_spaces_(std::string_view& str);
@@ -93,6 +100,7 @@ class section
         // current status:
         section* current_section_;
         setting_value* current_value_;
+        value_category current_value_category_;
     };
 
 public:

@@ -349,7 +349,8 @@ void section::print(unsigned indent) const
 
 
 section::parser::parser(section* section, std::istream& stream, std::string_view comment_marker)
-    : this_section_(section), stream_(stream), comment_marker_(comment_marker), current_section_(nullptr), current_value_(nullptr)
+    : this_section_(section), stream_(stream), comment_marker_(comment_marker),
+      current_section_(nullptr), current_value_(nullptr), current_value_category_(Single_line)
 {}
 
 section::parser::parser(section *section, std::istream& stream, const std::filesystem::path& setting_filepath)
@@ -358,12 +359,10 @@ section::parser::parser(section *section, std::istream& stream, const std::files
 
 void section::parser::parse()
 {
-    std::string buffer;
-    buffer.reserve(120);
-    read_from_stream_(buffer);
+    read_from_stream_();
 }
 
-void section::parser::read_from_stream_(std::string& buffer)
+void section::parser::read_from_stream_()
 {
     if (this_section_->is_root())
     {
@@ -381,6 +380,8 @@ void section::parser::read_from_stream_(std::string& buffer)
     current_section_ = this_section_;
     current_value_ = nullptr;
 
+    std::string buffer;
+    buffer.reserve(120);
     while (stream_ && !stream_.eof())
     {
         std::getline(stream_, buffer);
@@ -413,12 +414,13 @@ bool section::parser::create_setting_(const std::string_view &line)
 {
     std::string_view label;
     std::string_view value;
-    bool value_is_multi_line = false;
-    if (extract_name_and_value_(line, label, value, value_is_multi_line))
+    value_category value_cat = Single_line;
+    if (extract_name_and_value_(line, label, value, value_cat))
     {
         settings_dictionnary::value_type setting(label, value);
         auto insert_res = current_section_->settings_.emplace(std::move(setting));
-        if (value_is_multi_line)
+        current_value_category_ = value_cat;
+        if (value_cat != Single_line)
             current_value_ = &insert_res.first->second;
         else
             current_value_ = nullptr;
@@ -427,19 +429,29 @@ bool section::parser::create_setting_(const std::string_view &line)
     return false;
 }
 
-section *section::parser::create_sections_(const std::string_view &section_path) // ok
+section *section::parser::create_sections_(const std::string_view &section_path)
 {
     return this_section_->create_sections(section_path);
 }
 
-void section::parser::append_line_to_current_value_(const std::string_view& line) // ok
+void section::parser::append_line_to_current_value_(const std::string_view& line)
 {
     if (!line.empty())
     {
         if (!current_value_->empty())
         {
-            current_value_->reserve(current_value_->length() + line.length() + 1);
-            current_value_->append(1, '\n');
+            switch (current_value_category_)
+            {
+            case Multi_line:
+                current_value_->reserve(current_value_->length() + line.length() + 1);
+                current_value_->append(1, '\n');
+                break;
+            case Split_line:
+                current_value_->reserve(current_value_->length() + line.length());
+                break;
+            default:
+                std::cerr << "ERROR: Value category not handled! " << current_value_ << std::endl;
+            }
             current_value_->append(std::move(line));
         }
         else
@@ -458,7 +470,7 @@ std::string_view section::parser::deduce_comment_marker_from_(const std::filesys
 }
 
 bool section::parser::extract_name_and_value_(std::string_view str, std::string_view &label,
-                                           std::string_view &value, bool &value_is_multi_line)
+                                              std::string_view &value, value_category& value_cat)
 {
     std::size_t index = str.find('=');
     if (index != std::string::npos)
@@ -466,11 +478,24 @@ bool section::parser::extract_name_and_value_(std::string_view str, std::string_
         label = str.substr(0, index);
         remove_spaces_(label);
         value = str.substr(index + 1);
-        value_is_multi_line = !value.empty() && value.front() == '|';
-        if (value_is_multi_line)
-            value = std::string_view();
-        else
-            remove_spaces_(value);
+
+        if (!value.empty())
+        {
+            switch (value.front())
+            {
+            case '|':
+                value_cat = Multi_line;
+                break;
+            case '>':
+                value_cat = Split_line;
+                break;
+            default:
+                value_cat = Single_line;
+                remove_spaces_(value);
+            }
+            if (value_cat != Single_line)
+                value = std::string_view();
+        }
         return true;
     }
     return false;

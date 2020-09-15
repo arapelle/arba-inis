@@ -5,9 +5,15 @@ bad_int = 45a
 
 [section]
 level = 0
+
 arg =|
 Text on
 several lines.
+
+splitted =>
+A single line written on
+ two lines in the file.
+
 failed_arg = |
 
 [section.subsection]
