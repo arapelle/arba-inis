@@ -389,10 +389,10 @@ void section::parser::read_from_stream_()
         remove_comment_(line);
         remove_right_spaces_(line);
 
-        if (create_setting_(line))
+        if (try_create_setting_(line))
             continue;
 
-        if (create_sections_(line))
+        if (try_create_sections_(line))
             continue;
 
         if (current_value_)
@@ -406,18 +406,22 @@ void section::parser::read_from_stream_()
     }
 }
 
-bool section::parser::create_setting_(const std::string_view &line)
+bool section::parser::try_create_setting_(const std::string_view &line)
 {
     std::string_view label;
     std::string_view value;
+    std::string_view value_end_marker;
     value_category value_cat = Single_line;
-    if (extract_name_and_value_(line, label, value, value_cat))
+    if (extract_name_and_value_(line, label, value, value_end_marker, value_cat))
     {
         settings_dictionnary::value_type setting(label, value);
         auto insert_res = current_section_->settings_.emplace(std::move(setting));
         current_value_category_ = value_cat;
         if (value_cat != Single_line)
+        {
             current_value_ = &insert_res.first->second;
+            current_value_end_marker_ = value_end_marker;
+        }
         else
             reset_current_value_status_();
         return true;
@@ -425,7 +429,7 @@ bool section::parser::create_setting_(const std::string_view &line)
     return false;
 }
 
-bool section::parser::create_sections_(const std::string_view &section_path)
+bool section::parser::try_create_sections_(const std::string_view &section_path)
 {
     if (section* leaf_section = this_section_->create_sections(section_path))
     {
@@ -438,7 +442,7 @@ bool section::parser::create_sections_(const std::string_view &section_path)
 
 void section::parser::append_line_to_current_value_(const std::string_view& line)
 {
-    if (!line.empty())
+    if (line != current_value_end_marker_)
     {
         if (!current_value_->empty())
         {
@@ -469,7 +473,7 @@ void section::parser::reset_current_value_status_()
 {
     current_value_ = nullptr;
     current_value_category_ = Single_line;
-    current_end_value_marker_.clear();
+    current_value_end_marker_.clear();
 }
 
 std::string_view section::parser::deduce_comment_marker_from_(const std::filesystem::path& setting_filepath)
@@ -481,7 +485,8 @@ std::string_view section::parser::deduce_comment_marker_from_(const std::filesys
 }
 
 bool section::parser::extract_name_and_value_(std::string_view str, std::string_view &label,
-                                              std::string_view &value, value_category& value_cat)
+                                              std::string_view &value, std::string_view& value_end_marker,
+                                              value_category& value_cat)
 {
     std::size_t index = str.find('=');
     if (index != std::string::npos)
@@ -496,6 +501,8 @@ bool section::parser::extract_name_and_value_(std::string_view str, std::string_
             {
             case '|':
                 value_cat = Multi_line;
+                value_end_marker = value.substr(1);
+                remove_spaces_(value_end_marker);
                 break;
             case '>':
                 value_cat = Split_line;

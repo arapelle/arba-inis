@@ -10,6 +10,12 @@ arg =|
 Text on
 several lines.
 
+text =|.
+Begin of the text...
+
+... end of the text.
+.
+
 splitted =>
 A single line written on
  two lines in the file.

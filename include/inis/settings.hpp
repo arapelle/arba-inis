@@ -81,14 +81,14 @@ class section
 
     private:
         void read_from_stream_();
-        bool create_setting_(const std::string_view& line);
-        bool create_sections_(const std::string_view& section_path);
+        bool try_create_setting_(const std::string_view& line);
+        bool try_create_sections_(const std::string_view& section_path);
         void append_line_to_current_value_(const std::string_view &line);
         void reset_current_value_status_();
 
         static std::string_view deduce_comment_marker_from_(const std::filesystem::path& setting_filepath);
         static bool extract_name_and_value_(std::string_view str, std::string_view& label,
-                                            std::string_view& value, value_category &value_cat);
+                                            std::string_view& value, std::string_view &value_end_marker, value_category &value_cat);
         void remove_comment_(std::string_view& str);
         static void remove_spaces_(std::string_view& str);
         static void remove_left_spaces_(std::string_view& str);
@@ -102,7 +102,7 @@ class section
         section* current_section_;
         setting_value* current_value_;
         value_category current_value_category_;
-        std::string current_end_value_marker_;
+        std::string current_value_end_marker_;
     };
 
 public:

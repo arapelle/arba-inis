@@ -36,6 +36,7 @@ TEST(inis_tests, basic_settings_test)
     ASSERT_EQ(settings.setting<std::string>("section.level"), "0");
     ASSERT_EQ(settings.setting<int>("section.level"), 0);
     ASSERT_EQ(settings.setting<std::string>("section.arg"), "Text on\nseveral lines.");
+    ASSERT_EQ(settings.setting<std::string>("section.text"), "Begin of the text...\n\n... end of the text.");
     ASSERT_EQ(settings.setting<std::string>("section.failed_arg"), "|");
     ASSERT_EQ(settings.setting<std::string>("section.splitted"), "A single line written on two lines in the file.");
     ASSERT_EQ(settings.setting<std::string>("section.subsection.arg"), "45.5");
