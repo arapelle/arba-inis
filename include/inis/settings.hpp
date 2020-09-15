@@ -195,10 +195,10 @@ public:
     void write_to_file(const std::filesystem::path& path);
 
     // settings accessors:
-    const section* child_ptr(const std::string& section_path) const;
-    const section& child(const std::string& section_name) const { return *child_ptr(section_name); }
-    section* child_ptr(const std::string& section_path);
-    section& child(const std::string& section_name) { return *child_ptr(section_name); }
+    const section* subsection_ptr(const std::string& section_path) const;
+    const section& subsection(const std::string& section_name) const { return *subsection_ptr(section_name); }
+    section* subsection_ptr(const std::string& section_path);
+    section& subsection(const std::string& section_name) { return *subsection_ptr(section_name); }
 
     // printing methods:
     void print_to_stream(std::ostream& stream, unsigned indent = 0) const;

@@ -81,7 +81,7 @@ std::string section::formatted_setting(const std::string_view& setting_path, con
     std::string_view section_path;
     std::string_view setting_label;
     split_setting_path_(setting_path, section_path, setting_label);
-    const section* section = child_ptr(std::string(section_path));
+    const section* section = subsection_ptr(std::string(section_path));
     if (!section) [[unlikely]]
         return default_value;
     const setting_value* s_value = section->local_get_setting_value_ptr_(std::string(setting_label));
@@ -90,7 +90,7 @@ std::string section::formatted_setting(const std::string_view& setting_path, con
     return value;
 }
 
-const section* section::child_ptr(const std::string& section_path) const
+const section* section::subsection_ptr(const std::string& section_path) const
 {
     const section* settings = this;
     String_tokenizer tokenizer(section_path, '.');
@@ -105,7 +105,7 @@ const section* section::child_ptr(const std::string& section_path) const
     return settings;
 }
 
-section* section::child_ptr(const std::string& section_path)
+section* section::subsection_ptr(const std::string& section_path)
 {
     section* settings = this;
     String_tokenizer tokenizer(section_path, '.');
@@ -135,7 +135,7 @@ const setting_value* section::get_setting_value_ptr_(const std::string& setting_
 
     const section* settings = this;
     if (!section_name.empty())
-        settings = child_ptr(section_name);
+        settings = subsection_ptr(section_name);
 
     if (settings)
     {
@@ -156,7 +156,7 @@ setting_value* section::get_setting_value_ptr_(const std::string& setting_path)
 
     section* settings = this;
     if (!section_name.empty())
-        settings = child_ptr(section_name);
+        settings = subsection_ptr(section_name);
 
     if (settings)
     {
@@ -213,7 +213,7 @@ bool section::get_setting_value_if_exists_(const std::string& setting_path, std:
     std::string_view section_path;
     std::string_view setting_name;
     split_setting_path_(explicit_path, section_path, setting_name);
-    sec = sec->child_ptr(std::string(section_path));
+    sec = sec->subsection_ptr(std::string(section_path));
 
     const setting_value* s_value = sec->get_setting_value_ptr_(std::string(setting_name));
     if (s_value)

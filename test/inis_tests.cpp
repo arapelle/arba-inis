@@ -21,15 +21,15 @@ TEST(inis_tests, basic_settings_test)
     ASSERT_NE(settings.setting<std::string>(inis::section::tmp_dir), "");
 
     // sections:
-    ASSERT_EQ(settings.child_ptr(""), &settings);
-    ASSERT_NE(settings.child_ptr("section"), nullptr);
-    ASSERT_NE(settings.child_ptr("section.subsection"), nullptr);
-    ASSERT_NE(settings.child_ptr("section.subsection2"), nullptr);
-    ASSERT_EQ(settings.child_ptr("section.subsection.arg"), nullptr);
-    ASSERT_EQ(settings.child_ptr("")->name(), "");
-    ASSERT_EQ(settings.child_ptr("section")->name(), "section");
-    ASSERT_EQ(settings.child_ptr("section.subsection")->name(), "subsection");
-    ASSERT_EQ(settings.child_ptr("section.subsection2")->name(), "subsection2");
+    ASSERT_EQ(settings.subsection_ptr(""), &settings);
+    ASSERT_NE(settings.subsection_ptr("section"), nullptr);
+    ASSERT_NE(settings.subsection_ptr("section.subsection"), nullptr);
+    ASSERT_NE(settings.subsection_ptr("section.subsection2"), nullptr);
+    ASSERT_EQ(settings.subsection_ptr("section.subsection.arg"), nullptr);
+    ASSERT_EQ(settings.subsection_ptr("")->name(), "");
+    ASSERT_EQ(settings.subsection_ptr("section")->name(), "section");
+    ASSERT_EQ(settings.subsection_ptr("section.subsection")->name(), "subsection");
+    ASSERT_EQ(settings.subsection_ptr("section.subsection2")->name(), "subsection2");
 
     // user settings:
     ASSERT_EQ(settings.setting<std::string>("global_label"), "value");
