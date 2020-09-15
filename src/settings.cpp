@@ -81,12 +81,12 @@ std::string section::formatted_setting(const std::string_view& setting_path, con
     std::string_view section_path;
     std::string_view setting_label;
     split_setting_path_(setting_path, section_path, setting_label);
-    const section* settings = child_ptr(std::string(section_path));
-    if (!settings) [[unlikely]]
+    const section* section = child_ptr(std::string(section_path));
+    if (!section) [[unlikely]]
         return default_value;
-    const setting_value* s_value = settings->local_get_setting_value_ptr_(std::string(setting_label));
+    const setting_value* s_value = section->local_get_setting_value_ptr_(std::string(setting_label));
     value = s_value ? *s_value : default_value;
-    /*settings->*/format_(value, this);
+    section->format_(value, this);
     return value;
 }
 
@@ -123,11 +123,7 @@ section* section::child_ptr(const std::string& section_path)
 const setting_value* section::local_get_setting_value_ptr_(const std::string& setting_name) const
 {
     auto iter = settings_.find(setting_name);
-    if (iter != settings_.end())
-    {
-        return &iter->second;
-    }
-    return nullptr;
+    return iter != settings_.end() ? &iter->second : nullptr;
 }
 
 const setting_value* section::get_setting_value_ptr_(const std::string& setting_path) const
@@ -211,28 +207,40 @@ void section::format_(std::string &var, const section* root) const
 
 bool section::get_setting_value_if_exists_(const std::string& setting_path, std::string& value, const section* root) const
 {
-    const section* settings = this;
+    const section* sec = this;
+    std::size_t offset = find_explicit_path_start_(setting_path, sec, root);
+    std::string explicit_path = setting_path.substr(offset);
+    std::string_view section_path;
+    std::string_view setting_name;
+    split_setting_path_(explicit_path, section_path, setting_name);
+    sec = sec->child_ptr(std::string(section_path));
 
-    for (;;)
+    const setting_value* s_value = sec->get_setting_value_ptr_(std::string(setting_name));
+    if (s_value)
     {
-        const setting_value* ptr = settings->get_setting_value_ptr_(setting_path);
-        if (ptr)
-        {
-            value = *ptr;
-            break;
-        }
-        else if (settings != root)
-        {
-            settings = settings->parent_;
-        }
-        else
-        {
-            return false;
-        }
+        value = *s_value;
+    }
+    else
+    {
+        return false;
     }
 
-    settings->format(value);
+    sec->format_(value, root);
     return true;
+}
+
+std::size_t section::find_explicit_path_start_(const std::string_view& setting_path, const section*& sec, const section* root) const
+{
+    std::size_t offset = 0;
+    const section* lroot = sec;
+    for (auto iter = setting_path.begin(); iter != setting_path.end() && *iter == '.'; ++iter, ++offset)
+        lroot = lroot->parent();
+    for (; lroot && lroot != root; )
+    {
+        lroot = lroot->parent();
+        sec = sec->parent();
+    }
+    return offset;
 }
 
 bool section::set_setting_from_line_(const std::string_view& line, setting_value*& current_value)

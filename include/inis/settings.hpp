@@ -163,6 +163,7 @@ private:
     setting_value* get_setting_value_ptr_(const std::string& setting_path);
     void format_(std::string& var, const section *root) const;
     bool get_setting_value_if_exists_(const std::string& setting_path, std::string& value, const section *root) const;
+    std::size_t find_explicit_path_start_(const std::string_view& setting_path, const section*& section, const class section* root) const;
     bool set_setting_from_line_(const std::string_view& line, setting_value*& current_value);
     bool extract_label_value_(std::string_view str, std::string_view& label, std::string_view& value, bool& value_is_multi_line);
     void append_line_to_current_value_(setting_value*& current_value, std::string line);

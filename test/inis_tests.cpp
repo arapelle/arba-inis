@@ -69,7 +69,11 @@ TEST(inis_tests, format_test)
     ASSERT_EQ(vfs_img, "resource/image");
 
     // get_formatted("vfs.img"):
-    ASSERT_EQ(settings.formatted_setting("vfs.vid"), "global_rsc/video");
+//    std::cout << "formatted_setting implicit_path" << std::endl;
+    ASSERT_EQ(settings.formatted_setting("vfs.vid"), "resource/video");
+    ASSERT_EQ(settings.formatted_setting("root.branch.leaf.key_2"), "value_2");
+    ASSERT_EQ(settings.formatted_setting("root.branch.leaf.key_2_3"), "value_2_3");
+    ASSERT_EQ(settings.formatted_setting("root.branch.leaf.special"), "value_2resource/video");
 }
 
 int main(int argc, char** argv)
