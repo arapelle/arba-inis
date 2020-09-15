@@ -36,6 +36,7 @@ TEST(inis_tests, basic_settings_test)
     ASSERT_EQ(settings.setting<std::string>("section.level"), "0");
     ASSERT_EQ(settings.setting<int>("section.level"), 0);
     ASSERT_EQ(settings.setting<std::string>("section.arg"), "Text on\nseveral lines.");
+    ASSERT_EQ(settings.setting<std::string>("section.failed_arg"), "|");
     ASSERT_EQ(settings.setting<std::string>("section.subsection.arg"), "45.5");
     ASSERT_DOUBLE_EQ(settings.setting<double>("section.subsection.arg"), 45.5);
     ASSERT_EQ(settings.setting<std::string>("section.subsection2.arg"), "46.5");

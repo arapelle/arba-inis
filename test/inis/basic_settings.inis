@@ -1,11 +1,14 @@
 global_label = value
 bad_int = 45a
 
+# comment
+
 [section]
 level = 0
 arg =|
 Text on
 several lines.
+failed_arg = |
 
 [section.subsection]
 arg = 45.5
