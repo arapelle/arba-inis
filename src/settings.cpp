@@ -392,12 +392,8 @@ void section::parser::read_from_stream_()
         if (create_setting_(line))
             continue;
 
-        if (section* leaf_section = create_sections_(line))
-        {
-            current_section_ = leaf_section;
-            current_value_ = nullptr;
+        if (create_sections_(line))
             continue;
-        }
 
         if (current_value_)
         {
@@ -423,15 +419,21 @@ bool section::parser::create_setting_(const std::string_view &line)
         if (value_cat != Single_line)
             current_value_ = &insert_res.first->second;
         else
-            current_value_ = nullptr;
+            reset_current_value_status_();
         return true;
     }
     return false;
 }
 
-section *section::parser::create_sections_(const std::string_view &section_path)
+bool section::parser::create_sections_(const std::string_view &section_path)
 {
-    return this_section_->create_sections(section_path);
+    if (section* leaf_section = this_section_->create_sections(section_path))
+    {
+        current_section_ = leaf_section;
+        reset_current_value_status_();
+        return true;
+    }
+    return false;
 }
 
 void section::parser::append_line_to_current_value_(const std::string_view& line)
@@ -458,7 +460,16 @@ void section::parser::append_line_to_current_value_(const std::string_view& line
             *current_value_ = std::string(line);
     }
     else
-        current_value_ = nullptr;
+    {
+        reset_current_value_status_();
+    }
+}
+
+void section::parser::reset_current_value_status_()
+{
+    current_value_ = nullptr;
+    current_value_category_ = Single_line;
+    current_end_value_marker_.clear();
 }
 
 std::string_view section::parser::deduce_comment_marker_from_(const std::filesystem::path& setting_filepath)
