@@ -17,3 +17,6 @@ key = value
 key_2 = {...key}_2
 key_2_3 = {...key_2}_3
 special = {...key_2}{vfs.vid}
+
+[.second_branch]
+label = star

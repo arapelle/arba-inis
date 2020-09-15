@@ -77,6 +77,9 @@ TEST(inis_tests, format_test)
     ASSERT_EQ(settings.formatted_setting("root.branch.leaf.key_2"), "value_2");
     ASSERT_EQ(settings.formatted_setting("root.branch.leaf.key_2_3"), "value_2_3");
     ASSERT_EQ(settings.formatted_setting("root.branch.leaf.special"), "value_2resource/video");
+
+    // section with contracted path:
+    ASSERT_EQ(settings.setting<std::string>("root.second_branch.label"), "star");
 }
 
 int main(int argc, char** argv)

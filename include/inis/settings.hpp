@@ -82,7 +82,7 @@ class section
     private:
         void read_from_stream_();
         bool try_create_setting_(const std::string_view& line);
-        bool try_create_sections_(const std::string_view& section_path);
+        bool try_create_sections_(const std::string_view& line);
         void append_line_to_current_value_(const std::string_view &line);
         void reset_current_value_status_();
 
@@ -205,12 +205,14 @@ public:
     void print(unsigned indent = 0) const;
 
 private:
+    section* create_sections_(const std::string_view& section_path);
     const setting_value* local_get_setting_value_ptr_(const std::string& setting_name) const;
     const setting_value* get_setting_value_ptr_(const std::string& setting_path) const;
     setting_value* get_setting_value_ptr_(const std::string& setting_path);
     void format_(std::string& var, const section *root) const;
     bool get_setting_value_if_exists_(const std::string& setting_path, std::string& value, const section *root) const;
-    std::size_t find_explicit_path_start_(const std::string_view& setting_path, const section*& section, const class section* root) const;
+    static void resolve_implicit_path_part_(std::string_view &path, const section*& section, const class section* root);
+    static void resolve_implicit_path_part_(std::string_view &path, section*& sec, const section* root);
 
     static std::string_view parent_section_path_(const std::string_view& path);
     static void split_setting_path_(const std::string_view& setting_path, std::string_view& section_path, std::string_view& setting);

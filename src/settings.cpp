@@ -208,8 +208,8 @@ void section::format_(std::string &var, const section* root) const
 bool section::get_setting_value_if_exists_(const std::string& setting_path, std::string& value, const section* root) const
 {
     const section* sec = this;
-    std::size_t offset = find_explicit_path_start_(setting_path, sec, root);
-    std::string explicit_path = setting_path.substr(offset);
+    std::string_view explicit_path = setting_path;
+    resolve_implicit_path_part_(explicit_path, sec, root);
     std::string_view section_path;
     std::string_view setting_name;
     split_setting_path_(explicit_path, section_path, setting_name);
@@ -229,18 +229,40 @@ bool section::get_setting_value_if_exists_(const std::string& setting_path, std:
     return true;
 }
 
-std::size_t section::find_explicit_path_start_(const std::string_view& setting_path, const section*& sec, const section* root) const
+void section::resolve_implicit_path_part_(std::string_view& path, const section*& sec, const section* root)
 {
     std::size_t offset = 0;
     const section* lroot = sec;
-    for (auto iter = setting_path.begin(); iter != setting_path.end() && *iter == '.'; ++iter, ++offset)
+    for (auto iter = path.begin(); iter != path.end() && *iter == '.'; ++iter, ++offset)
+    {
+        if (!lroot || lroot == root)
+            throw std::runtime_error(std::string("The section path is incorrect (Too many '.'): ") += path);
         lroot = lroot->parent();
+    }
     for (; lroot && lroot != root; )
     {
         lroot = lroot->parent();
         sec = sec->parent();
     }
-    return offset;
+    path = path.substr(offset);
+}
+
+void section::resolve_implicit_path_part_(std::string_view& path, section*& sec, const section* root)
+{
+    std::size_t offset = 0;
+    const section* lroot = sec;
+    for (auto iter = path.begin(); iter != path.end() && *iter == '.'; ++iter, ++offset)
+    {
+        if (!lroot || lroot == root)
+            throw std::runtime_error(std::string("The section path is incorrect (Too many '.'): ") += path);
+        lroot = lroot->parent();
+    }
+    for (; lroot && lroot != root; )
+    {
+        lroot = lroot->parent();
+        sec = sec->parent();
+    }
+    path = path.substr(offset);
 }
 
 bool section::set(const std::string& setting_path, const std::string& value)
@@ -292,33 +314,33 @@ void section::split_setting_path_(const std::string_view& setting_path, std::str
     }
 }
 
-
-
 section* section::create_sections(const std::string_view& section_path)
 {
-    std::match_results<std::string_view::const_iterator> match;
-    if(std::regex_match(section_path.begin(), section_path.end(), match, std::regex(R"(^\[([\._[:alnum:]]+)\]$)"s, std::regex_constants::ECMAScript)))
+    if (std::regex_match(section_path.begin(), section_path.end(),
+                         std::regex(R"(^([\._[:alnum:]]+)$)"s, std::regex_constants::ECMAScript)))
     {
-        const auto& sm = match[1];
-        std::string_view section_name = std::string_view(sm.first, sm.length());
-
-        section* section_ptr = this;
-        String_tokenizer tokenizer(section_name, '.');
-        for (String_tokenizer::String_view token; tokenizer.has_token();)
-        {
-            token = tokenizer.next_token();
-            auto& settings_uptr = section_ptr->sections_[std::string(token)];
-            if (!settings_uptr)
-            {
-                settings_uptr = std::make_unique<section>(std::string(token));
-                settings_uptr->parent_ = section_ptr;
-            }
-            section_ptr = settings_uptr.get();
-        }
-
-        return section_ptr;
+        return create_sections_(section_path);
     }
     return nullptr;
+}
+
+section* section::create_sections_(const std::string_view& section_path)
+{
+    section* section_ptr = this;
+    String_tokenizer tokenizer(section_path, '.');
+    for (String_tokenizer::String_view token; tokenizer.has_token();)
+    {
+        token = tokenizer.next_token();
+        auto& settings_uptr = section_ptr->sections_[std::string(token)];
+        if (!settings_uptr)
+        {
+            settings_uptr = std::make_unique<section>(std::string(token));
+            settings_uptr->parent_ = section_ptr;
+        }
+        section_ptr = settings_uptr.get();
+    }
+
+    return section_ptr;
 }
 
 void section::print_to_stream(std::ostream& stream, unsigned indent) const
@@ -429,13 +451,25 @@ bool section::parser::try_create_setting_(const std::string_view &line)
     return false;
 }
 
-bool section::parser::try_create_sections_(const std::string_view &section_path)
+bool section::parser::try_create_sections_(const std::string_view &line)
 {
-    if (section* leaf_section = this_section_->create_sections(section_path))
+    std::match_results<std::string_view::const_iterator> match;
+    if(std::regex_match(line.begin(), line.end(), match,
+                        std::regex(R"(^\[([\._[:alnum:]]+)\]$)"s, std::regex_constants::ECMAScript)))
     {
-        current_section_ = leaf_section;
-        reset_current_value_status_();
-        return true;
+        const auto& sm = match[1];
+        std::string_view section_path = std::string_view(sm.first, sm.length());
+
+        section* sec = current_section_ ? current_section_ : this_section_;
+        std::string_view explicit_path = section_path;
+        resolve_implicit_path_part_(explicit_path, sec, this_section_);
+
+        if (section* leaf_section = sec->create_sections_(explicit_path))
+        {
+            current_section_ = leaf_section;
+            reset_current_value_status_();
+            return true;
+        }
     }
     return false;
 }
