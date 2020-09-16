@@ -1,12 +1,12 @@
 #include <iostream>
-#include <inis/settings.hpp>
+#include <inis/inis.hpp>
 
 int main()
 {
-    inis::settings settings;
-    inis::settings* branch = settings.create_sections("[root.branch]");
-    branch->set("key", "value");
-    settings.print();
+    inis::section settings;
+    inis::section* branch = settings.create_sections("root.branch");
+    branch->set_setting("key", "value");
+    settings.write_to_stream(std::cout);
     std::cout << "EXIT SUCCESS" << std::endl;
     return EXIT_SUCCESS;
 }
