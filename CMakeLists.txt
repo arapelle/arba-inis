@@ -16,8 +16,8 @@ set_build_type_if_undefined()
 
 project(inis
         VERSION 0.1.0
-#        DESCRIPTION ""
-#        HOMEPAGE_URL ""
+        DESCRIPTION "A C++ library reading/writing settings from/to an .ini(s) file."
+        HOMEPAGE_URL "https://github.com/arapelle/inis/"
         LANGUAGES CXX)
 
 message(STATUS "BUILD   : ${CMAKE_BUILD_TYPE}")
