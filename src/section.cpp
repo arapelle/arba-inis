@@ -229,6 +229,35 @@ bool section::get_setting_value_if_exists_(const std::string& setting_path, std:
     return true;
 }
 
+void section::write_to_stream_(std::ostream &stream, const section* const root, const std::string_view& default_value_end_marker)
+{
+    if (this != root)
+    {
+        stream << '[';
+        if (parent_ != root)
+            stream << '.';
+        stream << name() << ']' << std::endl;
+    }
+
+    for (const auto& entry : settings_)
+    {
+        if (entry.first.front() == '$') [[unlikely]]
+            continue;
+        stream << entry.first;
+        if (entry.second.find_first_of('\n') == std::string::npos)
+            stream << " = " << entry.second << '\n';
+        else
+            stream << " =| " << default_value_end_marker << "\n"
+                   << entry.second << "\n"
+                   << default_value_end_marker << "\n";
+    }
+    if (!settings_.empty()) [[unlikely]]
+        stream << '\n';
+
+    for (const auto& entry : sections_)
+        entry.second->write_to_stream_(stream, root, default_value_end_marker);
+}
+
 void section::resolve_implicit_path_part_(std::string_view& path, const section*& sec, const section* root)
 {
     std::size_t offset = 0;
@@ -265,30 +294,46 @@ void section::resolve_implicit_path_part_(std::string_view& path, section*& sec,
     path = path.substr(offset);
 }
 
-bool section::set(const std::string& setting_path, const std::string& value)
+bool section::set_setting(const std::string& setting_path, const std::string& value)
 {
-    std::regex label_regex("[_[:alnum:]]+"s);
+    std::regex label_regex(R"([\._[:alnum:]]+)"s);
     if (std::regex_match(setting_path, label_regex))
     {
-        settings_[setting_path] = value;
-        return true;
+        std::string_view section_path;
+        std::string_view setting_name;
+        split_setting_path_(setting_path, section_path, setting_name);
+        section* sec = subsection_ptr(std::string(section_path));
+        if (sec)
+        {
+            sec->settings_[setting_path] = value;
+            return true;
+        }
     }
     return false;
 }
 
-void section::read_from_file(const std::filesystem::path& path)
+void section::read_from_stream(std::istream &stream)
 {
-    settings_.insert_or_assign(std::string(settings_dir),
-                               std::filesystem::canonical(path).parent_path().generic_string());
-    std::ifstream stream(path.string());
-    parser inis_parser(this, stream, path);
-    inis_parser.parse();
+    parser inis_parser(this);
+    inis_parser.parse(stream);
 }
 
-void section::write_to_file(const std::filesystem::path& path)
+void section::read_from_file(const std::filesystem::path& path)
 {
-    std::ofstream stream(path.string());
-    print_to_stream(stream);
+    parser inis_parser(this);
+    inis_parser.parse(path);
+}
+
+void section::write_to_stream(std::ostream &stream, std::string_view default_value_end_marker)
+{
+    write_to_stream_(stream, this, default_value_end_marker);
+    stream.flush();
+}
+
+void section::write_to_file(const std::filesystem::path& path, std::string_view default_value_end_marker)
+{
+    std::ofstream stream(path);
+    write_to_stream(stream, default_value_end_marker);
 }
 
 std::string_view section::parent_section_path_(const std::string_view& path)
@@ -342,30 +387,5 @@ section* section::create_sections_(const std::string_view& section_path)
 
     return section_ptr;
 }
-
-void section::print_to_stream(std::ostream& stream, unsigned indent) const
-{
-    for (const auto& entry : settings_)
-    {
-        for (unsigned i = indent; i > 0; --i)
-            stream << "  ";
-        if (entry.first.front() != standard_label_mark_)
-            stream << entry.first << " = " << entry.second << std::endl;
-    }
-
-    for (const auto& entry : sections_)
-    {
-        for (unsigned i = indent; i > 0; --i)
-            stream << "  ";
-        stream << "[" << entry.first << "]" << std::endl;
-        entry.second->print_to_stream(stream, indent + 1);
-    }
-}
-
-void section::print(unsigned indent) const
-{
-    print_to_stream(std::cout, indent);
-}
-
 //----------------------------------------------------------------
 }

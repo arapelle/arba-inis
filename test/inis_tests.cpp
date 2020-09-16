@@ -45,8 +45,6 @@ TEST(inis_tests, basic_settings_test)
     ASSERT_DOUBLE_EQ(settings.setting<double>("section.subsection2.arg"), 46.5);
     ASSERT_EQ(settings.setting<std::string>("bad_int"), "45a");
     ASSERT_EQ(settings.setting<int>("bad_int", -1), -1);
-//    ASSERT_EQ(settings.get<std::string>("section.subsection2.last_label", "err"), "err");
-//    ASSERT_EQ(settings.get<std::string>("last_label"), "end");
 }
 
 TEST(inis_tests, format_test)

@@ -28,4 +28,4 @@ arg = 45.5
 [section.subsection2]
 arg = 46.5
 
-# last_label = end
+// last_label = end

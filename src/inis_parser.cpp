@@ -6,21 +6,29 @@
 
 namespace inis
 {
-section::parser::parser(section* section, std::istream& stream, const std::string_view &comment_marker)
-    : this_section_(section), stream_(stream), comment_marker_(comment_marker),
+section::parser::parser(section* section, const std::string_view &comment_marker)
+    : this_section_(section), comment_marker_(comment_marker),
       current_section_(nullptr), current_value_(nullptr), current_value_category_(Single_line)
 {}
 
-section::parser::parser(section *section, std::istream& stream, const std::filesystem::path& )
-    : parser(section, stream, std::string_view("//"))
+section::parser::parser(section *section)
+    : parser(section, std::string_view("//"))
 {}
 
-void section::parser::parse()
+void section::parser::parse(std::istream &stream)
 {
-    read_from_stream_();
+    read_from_stream_(stream);
 }
 
-void section::parser::read_from_stream_()
+void section::parser::parse(const std::filesystem::path &setting_filepath)
+{
+    this_section_->settings_.insert_or_assign(std::string(settings_dir),
+                                              std::filesystem::canonical(setting_filepath).parent_path().generic_string());
+    std::ifstream stream(setting_filepath);
+    read_from_stream_(stream);
+}
+
+void section::parser::read_from_stream_(std::istream &stream)
 {
     if (this_section_->is_root())
     {
@@ -40,9 +48,9 @@ void section::parser::read_from_stream_()
 
     std::string buffer;
     buffer.reserve(120);
-    while (stream_ && !stream_.eof())
+    while (stream && !stream.eof())
     {
-        std::getline(stream_, buffer);
+        std::getline(stream, buffer);
         std::string_view line(buffer);
         remove_comment_(line);
         remove_right_spaces_(line);
