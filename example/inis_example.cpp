@@ -1,5 +1,5 @@
 #include <iostream>
-#include <inis/settings.hpp>
+#include <inis/inis.hpp>
 
 int main()
 {

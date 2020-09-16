@@ -32,12 +32,13 @@ library_build_options(${PROJECT_NAME} STATIC SHARED EXAMPLE TEST)
 
 # Headers:
 set(headers
-    include/inis/settings.hpp
+    include/inis/inis.hpp
 )
 
 # Sources:
 set(sources
-    src/settings.cpp
+    src/section.cpp
+    src/inis_parser.cpp
 )
 
 # Add C++ library

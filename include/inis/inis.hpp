@@ -68,7 +68,7 @@ class section
             Split_line = 2,
         };
 
-        parser(section* section, std::istream& stream, std::string_view comment_marker);
+        parser(section* section, std::istream& stream, const std::string_view& comment_marker);
 
     public:
         parser(section* section, std::istream& stream, const std::filesystem::path& setting_filepath);
@@ -85,8 +85,6 @@ class section
         bool try_create_sections_(const std::string_view& line);
         void append_line_to_current_value_(const std::string_view &line);
         void reset_current_value_status_();
-
-        static std::string_view deduce_comment_marker_from_(const std::filesystem::path& setting_filepath);
         static bool extract_name_and_value_(std::string_view str, std::string_view& label,
                                             std::string_view& value, std::string_view &value_end_marker, value_category &value_cat);
         void remove_comment_(std::string_view& str);
@@ -196,9 +194,9 @@ public:
 
     // settings accessors:
     const section* subsection_ptr(const std::string& section_path) const;
-    const section& subsection(const std::string& section_name) const { return *subsection_ptr(section_name); }
+    inline const section& subsection(const std::string& section_name) const { return *subsection_ptr(section_name); }
     section* subsection_ptr(const std::string& section_path);
-    section& subsection(const std::string& section_name) { return *subsection_ptr(section_name); }
+    inline section& subsection(const std::string& section_name) { return *subsection_ptr(section_name); }
 
     // printing methods:
     void print_to_stream(std::ostream& stream, unsigned indent = 0) const;
@@ -213,10 +211,10 @@ private:
     bool get_setting_value_if_exists_(const std::string& setting_path, std::string& value, const section *root) const;
     static void resolve_implicit_path_part_(std::string_view &path, const section*& section, const class section* root);
     static void resolve_implicit_path_part_(std::string_view &path, section*& sec, const section* root);
-
     static std::string_view parent_section_path_(const std::string_view& path);
     static void split_setting_path_(const std::string_view& setting_path, std::string_view& section_path, std::string_view& setting);
 
+private:
     section* parent_ = nullptr;
     std::string name_;
     settings_dictionnary settings_;
