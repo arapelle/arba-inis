@@ -1,0 +1,33 @@
+global_label = value
+bad_int = 45a
+
+setting =
+
+// comment
+
+[section]
+level = 0
+
+arg =|
+Text on
+several lines.
+
+text =|.
+Begin of the text...
+
+... end of the text.
+.
+
+splitted =>
+A single line written on
+ two lines in the file.
+
+failed_arg = |
+
+[section.subsection]
+arg = 45.5
+
+[section.subsection2]
+arg = 46.5
+
+// last_label = end

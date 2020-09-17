@@ -1,0 +1,22 @@
+version = 0.1.0
+comment = {Version: '{version}'}
+rsc = global_rsc
+
+[dirname]
+img = image
+vid = video
+
+[vfs]
+rsc = resource
+img = {vfs.rsc}/{dirname.img}
+vid = {.rsc}/{dirname.vid}
+doc = Resource dir: '{rsc}'
+
+[root.branch.leaf]
+key = value
+key_2 = {...key}_2
+key_2_3 = {...key_2}_3
+special = {...key_2}{vfs.vid}
+
+[.second_branch]
+label = star
