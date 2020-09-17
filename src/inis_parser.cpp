@@ -6,6 +6,8 @@
 
 namespace inis
 {
+using namespace std::literals::string_literals;
+
 section::parser::parser(section* section, const std::string_view &comment_marker)
     : this_section_(section), comment_marker_(comment_marker),
       current_section_(nullptr), current_value_(nullptr), current_value_category_(Single_line)

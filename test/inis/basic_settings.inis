@@ -1,6 +1,8 @@
 global_label = value
 bad_int = 45a
 
+setting =
+
 // comment
 
 [section]

@@ -5,6 +5,8 @@
 
 namespace inis
 {
+using namespace std::literals::string_literals;
+
 template <class Char = char>
 class Basic_string_tokenizer
 {

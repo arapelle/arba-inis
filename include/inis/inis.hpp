@@ -12,8 +12,6 @@
 
 namespace inis
 {
-using namespace std::literals::string_literals;
-
 template <typename value_type>
 bool setting_string_to_value(const std::string& setting_value, value_type& value)
 {
@@ -39,7 +37,7 @@ public:
     setting_value(const std::string& str) : std::string(str) {}
     setting_value(std::string&& str) : std::string(std::move(str)) {}
 
-    bool is_default() const { return empty() || *this == "[$default]"; }
+    bool is_default() const { return empty(); }
 
     template <class value_type>
     value_type to(const value_type& default_value = value_type()) const
@@ -136,14 +134,46 @@ public:
         return default_value;
     }
 
+    template <class value_type, class default_value_type>
+    requires std::is_same_v<std::string, value_type>
+    && (std::is_same_v<default_value_type, std::string_view>
+        || std::is_array_v<default_value_type>)
+    std::string setting(const std::string_view& setting_path, const default_value_type& default_value) const
+    {
+        const setting_value* s_value = get_setting_value_ptr_(std::string(setting_path));
+        if (s_value && !s_value->is_default())
+            return *s_value;
+        return std::string(default_value);
+    }
+
     template <class value_type>
     requires std::is_same_v<std::string, value_type>
-    const std::string& setting(const std::string_view& setting_path, const std::string& default_value = std::string()) const
+    const std::string& setting(const std::string_view& setting_path, const std::string& default_value) const
+    {
+        const setting_value* s_value = get_setting_value_ptr_(std::string(setting_path));
+        if (s_value && !s_value->is_default())
+            return *s_value;
+        return default_value;
+    }
+
+    template <class value_type>
+    requires std::is_same_v<std::string, value_type>
+    std::string setting(const std::string_view& setting_path, std::string&& default_value) const
+    {
+        const setting_value* s_value = get_setting_value_ptr_(std::string(setting_path));
+        if (s_value && !s_value->is_default())
+            return *s_value;
+        return std::string(default_value);
+    }
+
+    template <class value_type>
+    requires std::is_same_v<std::string, value_type>
+    std::string setting(const std::string_view& setting_path) const
     {
         const setting_value* s_value = get_setting_value_ptr_(std::string(setting_path));
         if (s_value)
             return *s_value;
-        return default_value;
+        return std::string();
     }
 
     template <class value_type>
@@ -151,16 +181,9 @@ public:
     std::string_view setting(const std::string_view& setting_path, const std::string_view& default_value = std::string_view()) const
     {
         const setting_value* s_value = get_setting_value_ptr_(std::string(setting_path));
-        if (s_value)
+        if (s_value && !s_value->is_default())
             return *s_value;
         return default_value;
-    }
-
-    template <class value_type>
-    requires std::is_same_v<std::string_view, value_type>
-    std::string_view setting(const std::string_view& setting_path, const std::string& default_value = std::string()) const
-    {
-        return setting<std::string>(setting_path, default_value);
     }
 
     // format:

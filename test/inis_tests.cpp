@@ -3,6 +3,9 @@
 #include <filesystem>
 #include <cstdlib>
 
+using namespace std::literals::string_literals;
+using namespace std::literals::string_view_literals;
+
 std::string program_dir;
 
 TEST(inis_tests, basic_settings_test)
@@ -33,6 +36,21 @@ TEST(inis_tests, basic_settings_test)
 
     // user settings:
     ASSERT_EQ(settings.setting<std::string>("global_label"), "value");
+    ASSERT_EQ(settings.setting<std::string_view>("global_label"), "value");
+    ASSERT_EQ(settings.setting<std::string>("setting"), "");
+    static_assert(std::is_same_v<decltype(settings.setting<std::string>("setting")), std::string>);
+    ASSERT_EQ(settings.setting<std::string>("setting", "default"), "default");
+    static_assert(std::is_same_v<decltype(settings.setting<std::string>("setting", "default")), std::string>);
+    ASSERT_EQ(settings.setting<std::string>("setting", "default"s), "default");
+    static_assert(std::is_same_v<decltype(settings.setting<std::string>("setting", "default"s)), std::string>);
+    ASSERT_EQ(settings.setting<std::string>("setting", "default"sv), "default");
+    static_assert(std::is_same_v<decltype(settings.setting<std::string>("setting", "default"sv)), std::string>);
+    std::string default_str = "default";
+    ASSERT_EQ(settings.setting<std::string>("setting", default_str), "default");
+    ASSERT_EQ(&settings.setting<std::string>("setting", default_str), &default_str);
+    static_assert(std::is_same_v<decltype(settings.setting<std::string>("setting", default_str)), const std::string&>);
+    ASSERT_EQ(settings.setting<std::string_view>("setting"), "");
+    ASSERT_EQ(settings.setting<std::string_view>("setting", "default"), "default");
     ASSERT_EQ(settings.setting<std::string>("section.level"), "0");
     ASSERT_EQ(settings.setting<int>("section.level"), 0);
     ASSERT_EQ(settings.setting<std::string>("section.arg"), "Text on\nseveral lines.");
