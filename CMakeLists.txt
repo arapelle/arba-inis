@@ -34,7 +34,7 @@ generate_version_macro_header(generated_version_header
 
 ## Headers:
 set(headers
-    include/inis/inis.hpp
+    include/arba/inis/inis.hpp
 )
 
 # Sources:

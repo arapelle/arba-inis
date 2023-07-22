@@ -56,7 +56,7 @@ cmake -P cmake_uninstall.cmake
 
 ```c++
 #include <iostream>
-#include <inis/inis.hpp>
+#include <arba/inis/inis.hpp>
 
 int main()
 {
@@ -73,7 +73,7 @@ int main()
 
 ```c++
 #include <iostream>
-#include <inis/inis.hpp>
+#include <arba/inis/inis.hpp>
 
 int main()
 {
