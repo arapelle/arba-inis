@@ -4,8 +4,11 @@
 #include <fstream>
 #include <iostream>
 
+inline namespace arba
+{
 namespace inis
 {
+
 using namespace std::literals::string_literals;
 
 section::parser::parser(section* section, const std::string_view &comment_marker)
@@ -218,4 +221,5 @@ void section::parser::remove_right_spaces_(std::string_view& str)
         str.remove_suffix(str.end() - riter.base());
 }
 
+}
 }

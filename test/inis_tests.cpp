@@ -16,7 +16,7 @@ TEST(inis_tests, basic_settings_test)
     settings.read_from_file(inis_filepath);
 
     // standard settings:
-    ASSERT_EQ(inis::section::settings_dir, "$settings_dir");
+    ASSERT_EQ(arba::inis::section::settings_dir, "$settings_dir");
     ASSERT_EQ(inis::section::working_dir, "$working_dir");
     ASSERT_EQ(inis::section::tmp_dir, "$tmp_dir");
     ASSERT_NE(settings.setting<std::string>(inis::section::settings_dir), "");
