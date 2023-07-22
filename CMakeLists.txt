@@ -15,7 +15,7 @@ set_build_type_if_undefined()
 # C++ PROJECT
 
 project(inis
-        VERSION 0.1.0
+        VERSION 0.2.0
         DESCRIPTION "A C++ library reading/writing settings from/to an .ini(s) file."
         HOMEPAGE_URL "https://github.com/arapelle/inis/"
         LANGUAGES CXX)
