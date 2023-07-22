@@ -1,4 +1,5 @@
 #include <iostream>
+#include <arba/inis/version.hpp>
 #include <arba/inis/inis.hpp>
 
 int main()
