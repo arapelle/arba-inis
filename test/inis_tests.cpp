@@ -6,11 +6,11 @@
 using namespace std::literals::string_literals;
 using namespace std::literals::string_view_literals;
 
-std::string program_dir;
+std::filesystem::path rsc_dir(RSCDIR);
 
 TEST(inis_tests, basic_settings_test)
 {
-    std::filesystem::path inis_filepath("inis/basic_settings.inis");
+    std::filesystem::path inis_filepath = rsc_dir / "inis/basic_settings.inis";
     ASSERT_TRUE(std::filesystem::exists(inis_filepath));
     inis::section settings;
     settings.read_from_file(inis_filepath);
@@ -67,7 +67,7 @@ TEST(inis_tests, basic_settings_test)
 
 TEST(inis_tests, format_test)
 {
-    std::filesystem::path inis_filepath("inis/settings.inis");
+    std::filesystem::path inis_filepath = rsc_dir / "inis/settings.inis";
     ASSERT_TRUE(std::filesystem::exists(inis_filepath));
     inis::section settings;
     settings.read_from_file(inis_filepath);
@@ -96,11 +96,4 @@ TEST(inis_tests, format_test)
 
     // section with contracted path:
     ASSERT_EQ(settings.setting<std::string>("root.second_branch.label"), "star");
-}
-
-int main(int argc, char** argv)
-{
-    program_dir = std::filesystem::canonical(*argv).parent_path().generic_string();
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }
