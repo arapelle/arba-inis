@@ -10,7 +10,6 @@ The purpose is to read/write settings formatted in *inis* files, in C++. *inis* 
 ## Requirements
 
 Binaries:
-
 - A C++20 compiler (ex: g++-13)
 - CMake 3.26 or later
 
@@ -98,9 +97,9 @@ key = value
 }
 ```
 
-## Example - Using *inis* in a CMake project
+## Example - Using *arba-inis* in a CMake project
 
-See the *basic_cmake_project* example, and more specifically the *CMakeLists.txt* to see how to use *inis* in your CMake projects.
+See the *basic_cmake_project* example, and more specifically the *CMakeLists.txt* to see how to use *arba-inis* in your CMake projects.
 
 # License
 
