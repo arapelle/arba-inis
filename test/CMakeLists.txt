@@ -1,7 +1,17 @@
-add_cpp_library_tests(SHARED ${PROJECT_NAME}
-                      STATIC ${PROJECT_NAME}-static
-                      SOURCES
-                          inis_tests.cpp
-                      )
+find_or_fetch_GTest()
 
-file(CREATE_LINK "${CMAKE_CURRENT_LIST_DIR}/inis" "${CMAKE_CURRENT_BINARY_DIR}/inis" COPY_ON_ERROR SYMBOLIC)
+add_cpp_library_basic_tests(GTest::gtest_main
+    SHARED ${PROJECT_NAME}
+    STATIC ${PROJECT_NAME}-static
+    SOURCES
+        project_version_tests.cpp
+)
+
+add_cpp_library_test(${PROJECT_NAME}-inis_tests GTest::gtest_main
+    SHARED ${PROJECT_NAME}
+    STATIC ${PROJECT_NAME}-static
+    SOURCES
+        inis_tests.cpp
+)
+
+target_compile_definitions(${PROJECT_NAME}-inis_tests PUBLIC RSCDIR="${CMAKE_CURRENT_SOURCE_DIR}")

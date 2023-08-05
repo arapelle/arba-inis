@@ -10,8 +10,11 @@
 #include <string_view>
 #include <cstdlib>
 
+inline namespace arba
+{
 namespace inis
 {
+
 template <typename value_type>
 bool setting_string_to_value(const std::string& setting_value, value_type& value)
 {
@@ -237,4 +240,5 @@ private:
     std::unordered_map<std::string, std::unique_ptr<section>> sections_;
 };
 
+}
 }

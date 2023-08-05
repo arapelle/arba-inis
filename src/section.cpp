@@ -1,10 +1,13 @@
-#include <inis/inis.hpp>
+#include <arba/inis/inis.hpp>
 #include <regex>
 #include <fstream>
 #include <iostream>
 
+inline namespace arba
+{
 namespace inis
 {
+
 using namespace std::literals::string_literals;
 
 template <class Char = char>
@@ -390,4 +393,6 @@ section* section::create_sections_(const std::string_view& section_path)
     return section_ptr;
 }
 //----------------------------------------------------------------
+
+}
 }

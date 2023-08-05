@@ -1,12 +1,12 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.26)
 
 project(basic_cmake_project)
 
 add_executable(${PROJECT_NAME} main.cpp)
-# Find package inis:
-find_package(inis 0.1.0 CONFIG REQUIRED)
-# Use inis release shared target:
-target_link_libraries(${PROJECT_NAME} PRIVATE arba::inis)
-# Use inis release static target:
-#target_link_libraries(${PROJECT_NAME} PRIVATE arba::inis-static)
-
+add_executable(${PROJECT_NAME}-static main.cpp)
+# Find package arba-inis:
+find_package(arba-inis 0.2.0 CONFIG REQUIRED)
+# Use arba-inis release shared target:
+target_link_libraries(${PROJECT_NAME} PRIVATE arba-inis)
+# Use arba-inis release static target:
+target_link_libraries(${PROJECT_NAME}-static PRIVATE arba-inis-static)
