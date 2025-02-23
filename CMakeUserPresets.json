@@ -1,0 +1,9 @@
+{
+    "version": 4,
+    "vendor": {
+        "conan": {}
+    },
+    "include": [
+        "../workspace/arba-inis-Debug-devkit_conan-build/build/Debug/generators/CMakePresets.json"
+    ]
+}

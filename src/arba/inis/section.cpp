@@ -1,7 +1,8 @@
 #include <arba/inis/inis.hpp>
-#include <regex>
+
 #include <fstream>
 #include <iostream>
+#include <regex>
 
 inline namespace arba
 {
@@ -22,13 +23,11 @@ private:
 
 public:
     Basic_string_tokenizer(String_view strv, const Char& sep = Char(' '))
-    : str_(strv), current_(str_.begin()), sep_(sep)
-    {}
-
-    bool has_token() const
+        : str_(strv), current_(str_.begin()), sep_(sep)
     {
-        return current_ != str_.end();
     }
+
+    bool has_token() const { return current_ != str_.end(); }
 
     String_view next_token()
     {
@@ -58,11 +57,12 @@ using String_tokenizer = Basic_string_tokenizer<>;
 //------------------------------------------------------------------------------
 
 section::section()
-{}
+{
+}
 
-section::section(std::string name)
-    : name_(std::move(name))
-{}
+section::section(std::string name) : name_(std::move(name))
+{
+}
 
 section& section::root()
 {
@@ -80,7 +80,7 @@ const section& section::root() const
     return *root;
 }
 
-std::string section::formatted_setting(const std::string_view& setting_path, const std::string &default_value) const
+std::string section::formatted_setting(const std::string_view& setting_path, const std::string& default_value) const
 {
     std::string value;
     std::string_view section_path;
@@ -135,7 +135,7 @@ const setting_value* section::get_setting_value_ptr_(const std::string& setting_
 {
     std::size_t index = setting_path.rfind('.');
     std::string section_name;
-    if(index != std::string::npos && index > 0)
+    if (index != std::string::npos && index > 0)
         section_name = setting_path.substr(0, index);
 
     const section* settings = this;
@@ -144,7 +144,7 @@ const setting_value* section::get_setting_value_ptr_(const std::string& setting_
 
     if (settings)
     {
-        auto iter = settings->settings_.find(setting_path.substr(index+1));
+        auto iter = settings->settings_.find(setting_path.substr(index + 1));
         if (iter != settings->settings_.end())
             return &iter->second;
     }
@@ -156,7 +156,7 @@ setting_value* section::get_setting_value_ptr_(const std::string& setting_path)
 {
     std::size_t index = setting_path.rfind('.');
     std::string section_name;
-    if(index != std::string::npos && index > 0)
+    if (index != std::string::npos && index > 0)
         section_name = setting_path.substr(0, index);
 
     section* settings = this;
@@ -165,7 +165,7 @@ setting_value* section::get_setting_value_ptr_(const std::string& setting_path)
 
     if (settings)
     {
-        auto iter = settings->settings_.find(setting_path.substr(index+1));
+        auto iter = settings->settings_.find(setting_path.substr(index + 1));
         if (iter != settings->settings_.end())
             return &iter->second;
     }
@@ -173,7 +173,7 @@ setting_value* section::get_setting_value_ptr_(const std::string& setting_path)
     return nullptr;
 }
 
-void section::format_(std::string &var, const section* root) const
+void section::format_(std::string& var, const section* root) const
 {
     std::string regex_str = R"((\{()";
     regex_str += R"(\$)";
@@ -210,7 +210,8 @@ void section::format_(std::string &var, const section* root) const
     var = std::move(formatted_var);
 }
 
-bool section::get_setting_value_if_exists_(const std::string& setting_path, std::string& value, const section* root) const
+bool section::get_setting_value_if_exists_(const std::string& setting_path, std::string& value,
+                                           const section* root) const
 {
     const section* sec = this;
     std::string_view explicit_path = setting_path;
@@ -234,7 +235,8 @@ bool section::get_setting_value_if_exists_(const std::string& setting_path, std:
     return true;
 }
 
-void section::write_to_stream_(std::ostream &stream, const section* const root, const std::string_view& default_value_end_marker)
+void section::write_to_stream_(std::ostream& stream, const section* const root,
+                               const std::string_view& default_value_end_marker)
 {
     if (this != root)
     {
@@ -273,7 +275,7 @@ void section::resolve_implicit_path_part_(std::string_view& path, const section*
             throw std::runtime_error(std::string("The section path is incorrect (Too many '.'): ") += path);
         lroot = lroot->parent();
     }
-    for (; lroot && lroot != root; )
+    for (; lroot && lroot != root;)
     {
         lroot = lroot->parent();
         sec = sec->parent();
@@ -291,7 +293,7 @@ void section::resolve_implicit_path_part_(std::string_view& path, section*& sec,
             throw std::runtime_error(std::string("The section path is incorrect (Too many '.'): ") += path);
         lroot = lroot->parent();
     }
-    for (; lroot && lroot != root; )
+    for (; lroot && lroot != root;)
     {
         lroot = lroot->parent();
         sec = sec->parent();
@@ -317,7 +319,7 @@ bool section::set_setting(const std::string& setting_path, const std::string& va
     return false;
 }
 
-void section::read_from_stream(std::istream &stream)
+void section::read_from_stream(std::istream& stream)
 {
     parser inis_parser(this);
     inis_parser.parse(stream);
@@ -329,7 +331,7 @@ void section::read_from_file(const std::filesystem::path& path)
     inis_parser.parse(path);
 }
 
-void section::write_to_stream(std::ostream &stream, std::string_view default_value_end_marker)
+void section::write_to_stream(std::ostream& stream, std::string_view default_value_end_marker)
 {
     write_to_stream_(stream, this, default_value_end_marker);
     stream.flush();
@@ -349,7 +351,8 @@ std::string_view section::parent_section_path_(const std::string_view& path)
     return std::string_view();
 }
 
-void section::split_setting_path_(const std::string_view& setting_path, std::string_view& section_path, std::string_view& setting)
+void section::split_setting_path_(const std::string_view& setting_path, std::string_view& section_path,
+                                  std::string_view& setting)
 {
     std::size_t index = setting_path.rfind('.');
     if (index != std::string::npos && index > 0)
@@ -394,5 +397,5 @@ section* section::create_sections_(const std::string_view& section_path)
 }
 //----------------------------------------------------------------
 
-}
-}
+} // namespace inis
+} // namespace arba

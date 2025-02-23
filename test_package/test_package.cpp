@@ -23,6 +23,6 @@ key = value
     std::cout << num << std::endl;
     std::cout << text << std::endl;
 
-    std::cout << "EXIT SUCCESS" << std::endl;
+    std::cout << "TEST PACKAGE SUCCESS" << std::endl;
     return EXIT_SUCCESS;
 }

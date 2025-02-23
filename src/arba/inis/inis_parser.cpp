@@ -1,8 +1,9 @@
 #include <arba/inis/inis.hpp>
-#include <regex>
-#include <string_view>
+
 #include <fstream>
 #include <iostream>
+#include <regex>
+#include <string_view>
 
 inline namespace arba
 {
@@ -11,37 +12,38 @@ namespace inis
 
 using namespace std::literals::string_literals;
 
-section::parser::parser(section* section, const std::string_view &comment_marker)
-    : this_section_(section), comment_marker_(comment_marker),
-      current_section_(nullptr), current_value_(nullptr), current_value_category_(Single_line)
-{}
+section::parser::parser(section* section, const std::string_view& comment_marker)
+    : this_section_(section), comment_marker_(comment_marker), current_section_(nullptr), current_value_(nullptr),
+      current_value_category_(Single_line)
+{
+}
 
-section::parser::parser(section *section)
-    : parser(section, std::string_view("//"))
-{}
+section::parser::parser(section* section) : parser(section, std::string_view("//"))
+{
+}
 
-void section::parser::parse(std::istream &stream)
+void section::parser::parse(std::istream& stream)
 {
     read_from_stream_(stream);
 }
 
-void section::parser::parse(const std::filesystem::path &setting_filepath)
+void section::parser::parse(const std::filesystem::path& setting_filepath)
 {
-    this_section_->settings_.insert_or_assign(std::string(settings_dir),
-                                              std::filesystem::canonical(setting_filepath).parent_path().generic_string());
+    this_section_->settings_.insert_or_assign(
+        std::string(settings_dir), std::filesystem::canonical(setting_filepath).parent_path().generic_string());
     std::ifstream stream(setting_filepath);
     read_from_stream_(stream);
 }
 
-void section::parser::read_from_stream_(std::istream &stream)
+void section::parser::read_from_stream_(std::istream& stream)
 {
     if (this_section_->is_root())
     {
-        this_section_->settings_.insert_or_assign(std::string(working_dir),
-                                   std::filesystem::canonical(std::filesystem::current_path()).generic_string());
+        this_section_->settings_.insert_or_assign(
+            std::string(working_dir), std::filesystem::canonical(std::filesystem::current_path()).generic_string());
         this_section_->settings_.insert_or_assign(std::string(tmp_dir),
-                                   std::filesystem::temp_directory_path().generic_string());
-//        section_->settings_.insert_or_assign("$program_dir"s, "???");
+                                                  std::filesystem::temp_directory_path().generic_string());
+        //        section_->settings_.insert_or_assign("$program_dir"s, "???");
     }
     else
     {
@@ -77,7 +79,7 @@ void section::parser::read_from_stream_(std::istream &stream)
     }
 }
 
-bool section::parser::try_create_setting_(const std::string_view &line)
+bool section::parser::try_create_setting_(const std::string_view& line)
 {
     std::string_view label;
     std::string_view value;
@@ -100,11 +102,11 @@ bool section::parser::try_create_setting_(const std::string_view &line)
     return false;
 }
 
-bool section::parser::try_create_sections_(const std::string_view &line)
+bool section::parser::try_create_sections_(const std::string_view& line)
 {
     std::match_results<std::string_view::const_iterator> match;
-    if(std::regex_match(line.begin(), line.end(), match,
-                        std::regex(R"(^\[([\._[:alnum:]]+)\]$)"s, std::regex_constants::ECMAScript)))
+    if (std::regex_match(line.begin(), line.end(), match,
+                         std::regex(R"(^\[([\._[:alnum:]]+)\]$)"s, std::regex_constants::ECMAScript)))
     {
         const auto& sm = match[1];
         std::string_view section_path = std::string_view(sm.first, sm.length());
@@ -159,9 +161,8 @@ void section::parser::reset_current_value_status_()
     current_value_end_marker_.clear();
 }
 
-bool section::parser::extract_name_and_value_(std::string_view str, std::string_view &label,
-                                              std::string_view &value, std::string_view& value_end_marker,
-                                              value_category& value_cat)
+bool section::parser::extract_name_and_value_(std::string_view str, std::string_view& label, std::string_view& value,
+                                              std::string_view& value_end_marker, value_category& value_cat)
 {
     std::size_t index = str.find('=');
     if (index != std::string::npos)
@@ -197,7 +198,7 @@ bool section::parser::extract_name_and_value_(std::string_view str, std::string_
 void section::parser::remove_comment_(std::string_view& str)
 {
     std::size_t index = str.find(comment_marker_);
-    if(index != std::string::npos)
+    if (index != std::string::npos)
         str.remove_suffix(str.length() - index);
 }
 
@@ -210,16 +211,16 @@ void section::parser::remove_spaces_(std::string_view& str)
 void section::parser::remove_left_spaces_(std::string_view& str)
 {
     auto iter = std::find_if(str.begin(), str.end(), std::not_fn(isspace));
-    if(iter != str.end())
+    if (iter != str.end())
         str.remove_prefix(iter - str.begin());
 }
 
 void section::parser::remove_right_spaces_(std::string_view& str)
 {
     auto riter = std::find_if(str.rbegin(), str.rend(), std::not_fn(isspace));
-    if(riter != str.rend())
+    if (riter != str.rend())
         str.remove_suffix(str.end() - riter.base());
 }
 
-}
-}
+} // namespace inis
+} // namespace arba

@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.26)
 
+# EXTERNAL DEPENDENCIES
+
+add_subdirectory(external)
+
 # CMAKE INCLUDES
 
-list(PREPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/external/cmake/)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/external/cmake/)
 include(CMakePrintHelpers)
 include(cmtk/CppLibraryProject)
 
@@ -13,67 +17,73 @@ set_build_type_ifndef()
 
 # C++ PROJECT
 
-set(PROJECT_NAME "arba-inis")
-set(project_namespace "arba")
-set(project_base_name "inis")
-set(PROJECT_VERSION 0.2.0)
+set_project_name(NAMESPACE "arba" BASE_NAME "inis")
+string(TIMESTAMP configure_datetime "%Y%m%d-%H%M%S")
+set_project_semantic_version("0.3.0" BUILD_METADATA "${configure_datetime}")
+
 project(${PROJECT_NAME}
         VERSION ${PROJECT_VERSION}
         DESCRIPTION "A C++ library reading/writing settings from/to an .ini(s) file."
         HOMEPAGE_URL "https://github.com/arapelle/arba-inis"
         LANGUAGES CXX)
-message(STATUS "PROJECT : ${PROJECT_NAME} ${PROJECT_VERSION} ${CMAKE_BUILD_TYPE}")
-include(CTest)
+message(STATUS "PROJECT : ${PROJECT_NAME} ${PROJECT_SEMANTIC_VERSION} ${CMAKE_BUILD_TYPE}")
 
 # C++ LIBRARY
 
 ## Generated/Configured headers:
-generate_version_macro_header(generated_version_header
-                              ${project_namespace}_${project_base_name}
-                              ${project_namespace}/${project_base_name}/version.hpp)
+configure_headers(configured_headers
+    FILES
+        include/${PROJECT_NAMESPACE}/${PROJECT_BASE_NAME}/version.hpp.in
+)
 
 ## Headers:
 set(headers
     include/arba/inis/inis.hpp
 )
 
-# Sources:
+## Sources:
 set(sources
-    src/section.cpp
-    src/inis_parser.cpp
+    src/arba/inis/inis_parser.cpp
+    src/arba/inis/section.cpp
 )
 
-## Add C++ library
-add_cpp_library(
-    SHARED ${PROJECT_NAME}
-    STATIC ${PROJECT_NAME}-static
-    BUILD_SHARED BUILD_arba-arba
-    BUILD_STATIC BUILD_arba-arba-static
-    HEADERS ${headers} ${generated_version_header}
-    SOURCES ${sources}
-    CXX_STANDARD 20
+## Add C++ library:
+shared_or_static_option(${PROJECT_UPPER_VAR_NAME}_LIBRARY_TYPE "SHARED")
+if("${${PROJECT_UPPER_VAR_NAME}_LIBRARY_TYPE}" STREQUAL "SHARED")
+  set(LIBRARY_TYPE_POSTFIX "")
+  set(PROJECT_TARGET_NAME "${PROJECT_NAME}")
+else()
+  set(LIBRARY_TYPE_POSTFIX "-static")
+  set(PROJECT_TARGET_NAME "${PROJECT_NAME}${LIBRARY_TYPE_POSTFIX}")
+endif()
+
+add_cpp_library(${PROJECT_TARGET_NAME} ${${PROJECT_UPPER_VAR_NAME}_LIBRARY_TYPE}
+  HEADERS ${headers} ${configured_headers}
+  SOURCES ${sources}
+  HEADERS_BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
+  CXX_STANDARD 20
+  DEFAULT_WARNING_OPTIONS
 )
+add_library("${PROJECT_NAMESPACE}::${PROJECT_BASE_NAME}${LIBRARY_TYPE_POSTFIX}" ALIAS ${PROJECT_TARGET_NAME})
+
+## Link C++ targets:
+find_package(arba-cppx 0.1.0 REQUIRED CONFIG)
+target_link_libraries(${PROJECT_TARGET_NAME}
+    PUBLIC
+        arba::cppx
+)
+
+## Add tests:
+add_test_subdirectory_if_build(test)
+
+## Add examples:
+add_example_subdirectory_if_build(example)
+
+# C++ INSTALL
 
 ## Install C++ library:
-install_cpp_library(
-    SHARED ${PROJECT_NAME}
-    STATIC ${PROJECT_NAME}-static
-    EXPORT ${PROJECT_NAME}-targets
-)
+install_cpp_libraries(TARGETS ${PROJECT_TARGET_NAME} EXPORT ${PROJECT_NAME}-targets)
 
 ## Install project package
 install_library_package(${PROJECT_NAME} INPUT_PACKAGE_CONFIG_FILE cmake/config/package-config.cmake.in)
-install_uninstall_script(${PROJECT_NAME} FILENAME uninstall.cmake)
-
-## Add examples:
-option_or_set_ifdef(BUILD_${PROJECT_NAME}_EXAMPLES "Build ${PROJECT_NAME} examples or not" OFF BUILD_arba-arba_EXAMPLES)
-if(BUILD_${PROJECT_NAME}_EXAMPLES)
-    add_subdirectory(example)
-endif()
-
-## Add tests:
-option_or_set_ifdef(BUILD_${PROJECT_NAME}_TESTS "Build ${PROJECT_NAME} tests or not" OFF BUILD_arba-arba_TESTS)
-option(BUILD_${PROJECT_NAME}_TESTS "Build ${PROJECT_NAME} tests or not" OFF)
-if(BUILD_${PROJECT_NAME}_TESTS AND BUILD_TESTING)
-    add_subdirectory(test)
-endif()
+install_uninstall_script(${PROJECT_NAME})
