@@ -10,19 +10,31 @@ The purpose is to read/write settings formatted in *inis* files, in C++. *inis* 
 ## Requirements
 
 Binaries:
-- A C++20 compiler (ex: g++-13)
+- A C++20 compiler (ex: g++-14)
 - CMake 3.26 or later
 
 Testing Libraries (optional):
-- [Google Test](https://github.com/google/googletest) 1.13 or later (optional)
+- [Google Test](https://github.com/google/googletest) 1.14 or later (optional)
 
 ## Clone
 
 ```
-git clone https://github.com/arapelle/arba-inis --recurse-submodules
+git clone https://github.com/arapelle/arba-inis
 ```
 
-## Quick Install
+## Use with `conan`
+
+Create the conan package.
+```
+conan create . --build=missing -c
+```
+Add a requirement in your conanfile project file.
+```python
+    def requirements(self):
+        self.requires("arba-inis/0.3.0")
+```
+
+## Quick Install 
 
 There is a cmake script at the root of the project which builds the library in *Release* mode and install it (default options are used).
 
@@ -96,10 +108,6 @@ key = value
     return EXIT_SUCCESS;
 }
 ```
-
-## Example - Using *arba-inis* in a CMake project
-
-See the *basic_cmake_project* example, and more specifically the *CMakeLists.txt* to see how to use *arba-inis* in your CMake projects.
 
 # License
 

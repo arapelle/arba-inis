@@ -1,11 +1,11 @@
 #include <arba/inis/version.hpp>
-#include <gtest/gtest.h>
-#include <cstdlib>
 
-TEST(project_version_tests, test_version_macros)
+#include <gtest/gtest.h>
+
+TEST(project_version_tests, test_version_core)
 {
-    ASSERT_EQ(ARBA_INIS_VERSION_MAJOR, 0);
-    ASSERT_EQ(ARBA_INIS_VERSION_MINOR, 3);
-    ASSERT_EQ(ARBA_INIS_VERSION_PATCH, 0);
-    ASSERT_STREQ(ARBA_INIS_VERSION, "0.3.0");
+    constexpr unsigned major = 0;
+    constexpr unsigned minor = 3;
+    constexpr unsigned patch = 0;
+    static_assert(arba::inis::version.core() == arba::cppx::numver(major, minor, patch));
 }
