@@ -15,8 +15,8 @@ inline namespace arba
 namespace inis
 {
 
-template <typename value_type>
-bool setting_string_to_value(const std::string& setting_value, value_type& value)
+template <typename ValueType>
+bool setting_string_to_value(const std::string& setting_value, ValueType& value)
 {
     std::istringstream stream(setting_value);
     if (stream >> value)
@@ -24,8 +24,8 @@ bool setting_string_to_value(const std::string& setting_value, value_type& value
     return false;
 }
 
-template <typename value_type>
-std::string value_to_setting_string(const value_type& value)
+template <typename ValueType>
+std::string value_to_setting_string(const ValueType& value)
 {
     std::ostringstream stream;
     stream << value;
@@ -42,12 +42,12 @@ public:
 
     bool is_default() const { return empty(); }
 
-    template <class value_type>
-    value_type to(const value_type& default_value = value_type()) const
+    template <class ValueType>
+    ValueType to(const ValueType& default_value = ValueType()) const
     {
         if (!is_default())
         {
-            value_type res;
+            ValueType res;
             if (setting_string_to_value(*this, res))
                 return res;
         }
@@ -127,20 +127,20 @@ public:
     // settings accessors:
     inline const settings_dictionnary& settings() const { return settings_; }
 
-    template <class value_type>
-        requires(!(std::is_same_v<std::string, value_type> || std::is_same_v<std::string_view, value_type>))
-    value_type setting(const std::string_view& setting_path, const value_type& default_value = value_type()) const
+    template <class ValueType>
+        requires(!(std::is_same_v<std::string, ValueType> || std::is_same_v<std::string_view, ValueType>))
+    ValueType setting(const std::string_view& setting_path, const ValueType& default_value = ValueType()) const
     {
         const setting_value* s_value = get_setting_value_ptr_(std::string(setting_path));
         if (s_value)
-            return s_value->to<value_type>(default_value);
+            return s_value->to<ValueType>(default_value);
         return default_value;
     }
 
-    template <class value_type, class default_value_type>
-        requires std::is_same_v<std::string, value_type>
-                 && (std::is_same_v<default_value_type, std::string_view> || std::is_array_v<default_value_type>)
-    std::string setting(const std::string_view& setting_path, const default_value_type& default_value) const
+    template <class ValueType, class DefaultValueType>
+        requires std::is_same_v<std::string, ValueType>
+                 && (std::is_same_v<DefaultValueType, std::string_view> || std::is_array_v<DefaultValueType>)
+    std::string setting(const std::string_view& setting_path, const DefaultValueType& default_value) const
     {
         const setting_value* s_value = get_setting_value_ptr_(std::string(setting_path));
         if (s_value && !s_value->is_default())
@@ -148,8 +148,8 @@ public:
         return std::string(default_value);
     }
 
-    template <class value_type>
-        requires std::is_same_v<std::string, value_type>
+    template <class ValueType>
+        requires std::is_same_v<std::string, ValueType>
     const std::string& setting(const std::string_view& setting_path, const std::string& default_value) const
     {
         const setting_value* s_value = get_setting_value_ptr_(std::string(setting_path));
@@ -158,8 +158,8 @@ public:
         return default_value;
     }
 
-    template <class value_type>
-        requires std::is_same_v<std::string, value_type>
+    template <class ValueType>
+        requires std::is_same_v<std::string, ValueType>
     std::string setting(const std::string_view& setting_path, std::string&& default_value) const
     {
         const setting_value* s_value = get_setting_value_ptr_(std::string(setting_path));
@@ -168,8 +168,8 @@ public:
         return std::string(default_value);
     }
 
-    template <class value_type>
-        requires std::is_same_v<std::string, value_type>
+    template <class ValueType>
+        requires std::is_same_v<std::string, ValueType>
     std::string setting(const std::string_view& setting_path) const
     {
         const setting_value* s_value = get_setting_value_ptr_(std::string(setting_path));
@@ -178,8 +178,8 @@ public:
         return std::string();
     }
 
-    template <class value_type>
-        requires std::is_same_v<std::string_view, value_type>
+    template <class ValueType>
+        requires std::is_same_v<std::string_view, ValueType>
     std::string_view setting(const std::string_view& setting_path,
                              const std::string_view& default_value = std::string_view()) const
     {
@@ -198,9 +198,9 @@ public:
     // setting modifiers:
     bool set_setting(const std::string& setting_path, const std::string& value);
 
-    template <class value_type>
-        requires(!std::is_same_v<value_type, std::string>)
-    bool set_setting(const std::string& setting_path, const value_type& value)
+    template <class ValueType>
+        requires(!std::is_same_v<ValueType, std::string>)
+    bool set_setting(const std::string& setting_path, const ValueType& value)
     {
         return set_setting(setting_path, value_to_setting_string(value));
     }
