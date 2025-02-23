@@ -16,7 +16,7 @@ set_build_type_ifndef()
 set(PROJECT_NAME "arba-inis")
 set(project_namespace "arba")
 set(project_base_name "inis")
-set(PROJECT_VERSION 0.2.0)
+set(PROJECT_VERSION 0.3.0)
 project(${PROJECT_NAME}
         VERSION ${PROJECT_VERSION}
         DESCRIPTION "A C++ library reading/writing settings from/to an .ini(s) file."
