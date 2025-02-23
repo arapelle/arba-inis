@@ -43,8 +43,8 @@ set(headers
 
 ## Sources:
 set(sources
-    src/inis_parser.cpp
-    src/section.cpp
+    src/arba/inis/inis_parser.cpp
+    src/arba/inis/section.cpp
 )
 
 ## Add C++ library:
