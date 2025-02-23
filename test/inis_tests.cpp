@@ -90,10 +90,13 @@ TEST(inis_tests, format_test)
     // get_formatted("vfs.img"):
 //    std::cout << "formatted_setting implicit_path" << std::endl;
     ASSERT_EQ(settings.formatted_setting("vfs.vid"), "resource/video");
+    ASSERT_EQ(settings.formatted_setting("vfs.doc"), "Resource dir: 'global_rsc'");
     ASSERT_EQ(settings.formatted_setting("root.branch.leaf.key_2"), "value_2");
     ASSERT_EQ(settings.formatted_setting("root.branch.leaf.key_2_3"), "value_2_3");
     ASSERT_EQ(settings.formatted_setting("root.branch.leaf.special"), "value_2resource/video");
 
     // section with contracted path:
     ASSERT_EQ(settings.setting<std::string>("root.second_branch.label"), "star");
+
+    ASSERT_EQ(settings.formatted_setting("first.second.third.request"), "fst");
 }

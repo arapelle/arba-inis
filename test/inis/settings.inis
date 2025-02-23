@@ -12,6 +12,14 @@ img = {vfs.rsc}/{dirname.img}
 vid = {.rsc}/{dirname.vid}
 doc = Resource dir: '{rsc}'
 
+[first]
+key = f
+[first.second]
+key = {.key}s
+[first.second.third]
+key = {..key}t
+request = {...key}
+
 [root.branch.leaf]
 key = value
 key_2 = {...key}_2
