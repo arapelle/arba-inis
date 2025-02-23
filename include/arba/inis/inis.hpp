@@ -1,14 +1,14 @@
 #pragma once
 
-#include <filesystem>
-#include <sstream>
-#include <functional>
-#include <unordered_map>
 #include <algorithm>
-#include <utility>
+#include <cstdlib>
+#include <filesystem>
+#include <functional>
+#include <sstream>
 #include <string>
 #include <string_view>
-#include <cstdlib>
+#include <unordered_map>
+#include <utility>
 
 inline namespace arba
 {
@@ -45,7 +45,7 @@ public:
     template <class value_type>
     value_type to(const value_type& default_value = value_type()) const
     {
-        if(!is_default())
+        if (!is_default())
         {
             value_type res;
             if (setting_string_to_value(*this, res))
@@ -77,16 +77,16 @@ class section
         inline section* sec() { return this_section_; }
         inline const std::string_view& comment_marker() const { return comment_marker_; }
         void parse(std::istream& stream);
-        void parse(const std::filesystem::path &setting_filepath);
+        void parse(const std::filesystem::path& setting_filepath);
 
     private:
         void read_from_stream_(std::istream& stream);
         bool try_create_setting_(const std::string_view& line);
         bool try_create_sections_(const std::string_view& line);
-        void append_line_to_current_value_(const std::string_view &line);
+        void append_line_to_current_value_(const std::string_view& line);
         void reset_current_value_status_();
-        static bool extract_name_and_value_(std::string_view str, std::string_view& label,
-                                            std::string_view& value, std::string_view &value_end_marker, value_category &value_cat);
+        static bool extract_name_and_value_(std::string_view str, std::string_view& label, std::string_view& value,
+                                            std::string_view& value_end_marker, value_category& value_cat);
         void remove_comment_(std::string_view& str);
         static void remove_spaces_(std::string_view& str);
         static void remove_left_spaces_(std::string_view& str);
@@ -128,7 +128,7 @@ public:
     inline const settings_dictionnary& settings() const { return settings_; }
 
     template <class value_type>
-    requires (!(std::is_same_v<std::string, value_type> || std::is_same_v<std::string_view, value_type>))
+        requires(!(std::is_same_v<std::string, value_type> || std::is_same_v<std::string_view, value_type>))
     value_type setting(const std::string_view& setting_path, const value_type& default_value = value_type()) const
     {
         const setting_value* s_value = get_setting_value_ptr_(std::string(setting_path));
@@ -138,9 +138,8 @@ public:
     }
 
     template <class value_type, class default_value_type>
-    requires std::is_same_v<std::string, value_type>
-    && (std::is_same_v<default_value_type, std::string_view>
-        || std::is_array_v<default_value_type>)
+        requires std::is_same_v<std::string, value_type>
+                 && (std::is_same_v<default_value_type, std::string_view> || std::is_array_v<default_value_type>)
     std::string setting(const std::string_view& setting_path, const default_value_type& default_value) const
     {
         const setting_value* s_value = get_setting_value_ptr_(std::string(setting_path));
@@ -150,7 +149,7 @@ public:
     }
 
     template <class value_type>
-    requires std::is_same_v<std::string, value_type>
+        requires std::is_same_v<std::string, value_type>
     const std::string& setting(const std::string_view& setting_path, const std::string& default_value) const
     {
         const setting_value* s_value = get_setting_value_ptr_(std::string(setting_path));
@@ -160,7 +159,7 @@ public:
     }
 
     template <class value_type>
-    requires std::is_same_v<std::string, value_type>
+        requires std::is_same_v<std::string, value_type>
     std::string setting(const std::string_view& setting_path, std::string&& default_value) const
     {
         const setting_value* s_value = get_setting_value_ptr_(std::string(setting_path));
@@ -170,7 +169,7 @@ public:
     }
 
     template <class value_type>
-    requires std::is_same_v<std::string, value_type>
+        requires std::is_same_v<std::string, value_type>
     std::string setting(const std::string_view& setting_path) const
     {
         const setting_value* s_value = get_setting_value_ptr_(std::string(setting_path));
@@ -180,8 +179,9 @@ public:
     }
 
     template <class value_type>
-    requires std::is_same_v<std::string_view, value_type>
-    std::string_view setting(const std::string_view& setting_path, const std::string_view& default_value = std::string_view()) const
+        requires std::is_same_v<std::string_view, value_type>
+    std::string_view setting(const std::string_view& setting_path,
+                             const std::string_view& default_value = std::string_view()) const
     {
         const setting_value* s_value = get_setting_value_ptr_(std::string(setting_path));
         if (s_value && !s_value->is_default())
@@ -192,13 +192,14 @@ public:
     // format:
     inline void format(std::string& var) const { format_(var, this); }
 
-    std::string formatted_setting(const std::string_view& setting_path, const std::string& default_value = std::string()) const;
+    std::string formatted_setting(const std::string_view& setting_path,
+                                  const std::string& default_value = std::string()) const;
 
     // setting modifiers:
     bool set_setting(const std::string& setting_path, const std::string& value);
 
     template <class value_type>
-    requires (!std::is_same_v<value_type, std::string>)
+        requires(!std::is_same_v<value_type, std::string>)
     bool set_setting(const std::string& setting_path, const value_type& value)
     {
         return set_setting(setting_path, value_to_setting_string(value));
@@ -225,13 +226,15 @@ private:
     const setting_value* local_get_setting_value_ptr_(const std::string& setting_name) const;
     const setting_value* get_setting_value_ptr_(const std::string& setting_path) const;
     setting_value* get_setting_value_ptr_(const std::string& setting_path);
-    void format_(std::string& var, const section *root) const;
-    bool get_setting_value_if_exists_(const std::string& setting_path, std::string& value, const section *root) const;
-    void write_to_stream_(std::ostream& stream, const section * const root, const std::string_view &default_value_end_marker);
-    static void resolve_implicit_path_part_(std::string_view &path, const section*& section, const class section* root);
-    static void resolve_implicit_path_part_(std::string_view &path, section*& sec, const section* root);
+    void format_(std::string& var, const section* root) const;
+    bool get_setting_value_if_exists_(const std::string& setting_path, std::string& value, const section* root) const;
+    void write_to_stream_(std::ostream& stream, const section* const root,
+                          const std::string_view& default_value_end_marker);
+    static void resolve_implicit_path_part_(std::string_view& path, const section*& section, const class section* root);
+    static void resolve_implicit_path_part_(std::string_view& path, section*& sec, const section* root);
     static std::string_view parent_section_path_(const std::string_view& path);
-    static void split_setting_path_(const std::string_view& setting_path, std::string_view& section_path, std::string_view& setting);
+    static void split_setting_path_(const std::string_view& setting_path, std::string_view& section_path,
+                                    std::string_view& setting);
 
 private:
     section* parent_ = nullptr;
@@ -240,5 +243,5 @@ private:
     std::unordered_map<std::string, std::unique_ptr<section>> sections_;
 };
 
-}
-}
+} // namespace inis
+} // namespace arba

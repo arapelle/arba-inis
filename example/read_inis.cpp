@@ -1,5 +1,6 @@
-#include <iostream>
 #include <arba/inis/inis.hpp>
+
+#include <iostream>
 
 int main()
 {

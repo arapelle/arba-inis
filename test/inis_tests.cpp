@@ -1,7 +1,9 @@
 #include <arba/inis/inis.hpp>
+
 #include <gtest/gtest.h>
-#include <filesystem>
+
 #include <cstdlib>
+#include <filesystem>
 
 using namespace std::literals::string_literals;
 using namespace std::literals::string_view_literals;
@@ -88,7 +90,7 @@ TEST(inis_tests, format_test)
     ASSERT_EQ(vfs_img, "resource/image");
 
     // get_formatted("vfs.img"):
-//    std::cout << "formatted_setting implicit_path" << std::endl;
+    //    std::cout << "formatted_setting implicit_path" << std::endl;
     ASSERT_EQ(settings.formatted_setting("vfs.vid"), "resource/video");
     ASSERT_EQ(settings.formatted_setting("vfs.doc"), "Resource dir: 'global_rsc'");
     ASSERT_EQ(settings.formatted_setting("root.branch.leaf.key_2"), "value_2");
