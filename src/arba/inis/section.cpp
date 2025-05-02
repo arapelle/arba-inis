@@ -86,12 +86,12 @@ std::string section::formatted_setting(const std::string_view& setting_path, con
     std::string_view section_path;
     std::string_view setting_label;
     split_setting_path_(setting_path, section_path, setting_label);
-    const section* section = subsection_ptr(std::string(section_path));
-    if (!section) [[unlikely]]
+    const section* section_ptr = subsection_ptr(std::string(section_path));
+    if (!section_ptr) [[unlikely]]
         return default_value;
-    const setting_value* s_value = section->local_get_setting_value_ptr_(std::string(setting_label));
+    const setting_value* s_value = section_ptr->local_get_setting_value_ptr_(std::string(setting_label));
     value = s_value ? *s_value : default_value;
-    section->format_(value, this);
+    section_ptr->format_(value, this);
     return value;
 }
 
